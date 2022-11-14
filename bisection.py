@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Function
 
 
@@ -33,7 +34,6 @@ class EntmaxBisectFunction(Function):
 
         dm = tau_hi - tau_lo
         for it in range(n_iter):
-
             dm /= 2
             tau_m = tau_lo + dm
             p_m = cls.p(X, tau_m, alpha)
@@ -78,3 +78,20 @@ class EntmaxBisectFunction(Function):
             d_alpha = d_alpha.sum(ctx.dim).unsqueeze(ctx.dim)
 
         return dX, d_alpha, None, None, None
+
+
+def entmax_bisect(X, alpha=1.5, dim=-1, n_iter=50, ensure_sum_one=True):
+    return EntmaxBisectFunction.apply(X, alpha, dim, n_iter, ensure_sum_one)
+
+
+class EntmaxBisect(nn.Module):
+    def __init__(self, alpha=1.5, dim=-1, n_iter=50):
+        self.dim = dim
+        self.n_iter = n_iter
+        self.alpha = alpha
+        super().__init__()
+
+    def forward(self, X):
+        return entmax_bisect(
+            X, alpha=self.alpha, dim=self.dim, n_iter=self.n_iter
+        )
