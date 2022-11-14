@@ -1,6 +1,5 @@
 import torch
 from torch.autograd import Function
-from bisection import EntmaxBisectFunction
 from time import time
 
 
