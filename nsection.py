@@ -1,8 +1,5 @@
 import torch
 from torch.autograd import Function
-from entmax.root_finding import entmax_bisect
-from bisection import EntmaxBisectFunction
-from time import time
 
 
 def kernel(tau, X, alpha, dummy_mat, sctn_id, dim=-1):
@@ -71,7 +68,8 @@ class EntmaxNsectFunction(Function):
                             tau_lo[row_id] = sctn_tau[row_id, val_id - 1]
                             tau_hi[row_id] = sctn_tau[row_id, val_id]
                             break
-
+        
+        print(tau)
         p_m = cls.p(X, tau, alpha)
         if ensure_sum_one:
             p_m /= p_m.sum(dim=dim).unsqueeze(dim=dim)
@@ -111,39 +109,3 @@ class EntmaxNsectFunction(Function):
 
         return dX, d_alpha, None, None, None
 
-
-def main():
-    torch.manual_seed(42)
-    test = torch.randn(10, 5)
-
-    print("Output and time for my Bisect function:")
-    start = time()
-    out = EntmaxBisectFunction.forward(Function, test, n_iter=50)
-    print(out[-1])
-    print(time()-start)
-
-    n_iter = 5
-    n_sections = 5
-    print(f"\nOutput and time for my Nsect function ({n_iter} iters {n_sections} sects):")
-    start = time()
-    out1 = EntmaxNsectFunction.forward(Function, test, n_iter=n_iter, n_sections=n_sections)
-    print(out1[-1])
-    print(time()-start)
-
-    n_iter = 2
-    n_sections = 50
-    print(f"\nOutput and time for my Nsect function ({n_iter} iters {n_sections} sects):")
-    start = time()
-    out2 = EntmaxNsectFunction.forward(Function, test, n_iter=n_iter, n_sections=n_sections)
-    print(out2[-1])
-    print(time()-start)
-
-    print("\nOutput and time for Vlad's Bisect function:")
-    start = time()
-    out3 = entmax_bisect(test)
-    print(out3[-1])
-    print(time()-start)
-
-
-if __name__ == "__main__":
-    main()
