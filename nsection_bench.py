@@ -1,6 +1,5 @@
 import torch
 from torch.autograd import Function
-from time import time
 
 
 class EntmaxNsectFunction(Function):
