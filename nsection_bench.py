@@ -19,7 +19,7 @@ class EntmaxNsectFunction(Function):
         return out
 
     @classmethod
-    def forward(cls, ctx, X, alpha=1.5, dim=-1, n_iter=50, ensure_sum_one=True, n_sections=5):
+    def forward(cls, ctx, X, alpha=1.5, dim=-1, n_iter=5, n_sections=5, ensure_sum_one=True):
 
         if not isinstance(alpha, torch.Tensor):
             alpha = torch.tensor(alpha, dtype=X.dtype, device=X.device)
@@ -44,7 +44,6 @@ class EntmaxNsectFunction(Function):
         for it in range(n_iter):
 
             sctn_rng /= n_sections
-
             for sctn_id in range(1,n_sections+1):
                 sctn_tau_lo = tau_lo + ((sctn_id - 1)*sctn_rng)
                 sctn_tau_hi = tau_lo + (sctn_id*sctn_rng)
@@ -88,4 +87,8 @@ class EntmaxNsectFunction(Function):
             d_alpha -= dY * (S - Y_skewed * ent) / (ctx.alpha - 1)
             d_alpha = d_alpha.sum(ctx.dim).unsqueeze(ctx.dim)
 
-        return dX, d_alpha, None, None, None
+        return dX, d_alpha, None, None, None, None
+
+
+def entmax_nsect(X, alpha=1.5, dim=-1, n_iter=5, n_sections=5, ensure_sum_one=True):
+    return EntmaxNsectFunction.apply(X, alpha, dim, n_iter, n_sections, ensure_sum_one)
