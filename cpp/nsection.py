@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Function
 
 import nsection_cpp
@@ -49,3 +50,17 @@ class EntmaxNsectFunction(Function):
 
 def entmax_nsect_cpp(X, alpha=1.5, dim=-1, n_iter=5, n_sections=5, ensure_sum_one=True):
     return EntmaxNsectFunction.apply(X, alpha, dim, n_iter, n_sections, ensure_sum_one)
+
+
+class EntmaxNsect(nn.Module):
+    def __init__(self, alpha=1.5, dim=-1, n_iter=5, n_sections=5):
+        self.dim = dim
+        self.n_iter = n_iter
+        self.alpha = alpha
+        self.n_sections = n_sections
+        super().__init__()
+
+    def forward(self, X):
+        return entmax_nsect_cpp(
+            X, alpha=self.alpha, dim=self.dim, n_iter=self.n_iter, n_sections=self.n_sections
+        )
