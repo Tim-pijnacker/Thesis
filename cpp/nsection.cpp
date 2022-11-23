@@ -58,10 +58,10 @@ torch::Tensor nsection_forward(
     for(int i = 0; i < nIters; i++){
         sctnRng /= nSections;
         for(int j = 1; j < nSections+1; j++){
-            sctnTauLo = tauLo + (j-1)*sctnRng;
-            sctnTauHi = tauLo + j*sctnRng;
+            torch::add_outf(tauLo, sctnRng, j - 1, sctnTauLo);
+            torch::add_outf(tauLo, sctnRng, j, sctnTauHi);
             auto mask = sctn_check(Z, sctnTauLo, sctnTauHi, alpha, dim);
-            tauLo = torch::where_out(tauLo, mask, sctnTauLo, tauLo);
+            torch::where_out(tauLo, mask, sctnTauLo, tauLo);
         } 
     }
     torch::Tensor p = prob(Z, tauLo, alpha);
