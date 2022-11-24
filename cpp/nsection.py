@@ -7,11 +7,11 @@ import nsection_cpp
 
 class EntmaxNsectFunction(Function):
     @classmethod
-    def forward(cls, ctx, X, alpha=1.5, dim=-1, n_iter=5, n_sections=5, ensure_sum_one=True):
+    def forward(cls, ctx, X, alpha=1.5, dim=-1, n_iter=5, n_sections=5):
         ctx.alpha = alpha
         ctx.dim = dim
 
-        p_m = nsection_cpp.forward(X, alpha, dim, n_iter, n_sections, ensure_sum_one)
+        p_m = nsection_cpp.forward(X, alpha, dim, n_iter, n_sections)
 
         ctx.save_for_backward(p_m)
         return p_m
@@ -28,8 +28,8 @@ class EntmaxNsectFunction(Function):
         return dX, None, None, None, None, None
 
 
-def entmax_nsect_cpp(X, alpha=1.5, dim=-1, n_iter=5, n_sections=5, ensure_sum_one=True):
-    return EntmaxNsectFunction.apply(X, alpha, dim, n_iter, n_sections, ensure_sum_one)
+def entmax_nsect_cpp(X, alpha=1.5, dim=-1, n_iter=5, n_sections=5):
+    return EntmaxNsectFunction.apply(X, alpha, dim, n_iter, n_sections)
 
 
 class EntmaxNsect(nn.Module):
