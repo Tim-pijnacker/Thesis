@@ -36,8 +36,7 @@ torch::Tensor nsection_forward(
     float alpha,
     int dim,
     int nIters,
-    int nSections,
-    bool ensure_sum_one    
+    int nSections
 ){
     auto shape = torch::_shape_as_tensor(Z);
     auto d = shape[1].item<int>();
@@ -65,9 +64,7 @@ torch::Tensor nsection_forward(
         } 
     }
     torch::Tensor p = prob(Z, tauLo, alpha);
-    if(ensure_sum_one){
-        p /= torch::unsqueeze(torch::sum(p,dim), dim);
-    }
+    p /= torch::unsqueeze(torch::sum(p,dim), dim);
     return p;
 }
 
