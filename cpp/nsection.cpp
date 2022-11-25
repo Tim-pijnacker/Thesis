@@ -3,81 +3,59 @@
 #include <iostream>
 
 
-torch::Tensor prob(
-    torch::Tensor Z,
-    torch::Tensor tau,
-    float alpha    
-){
-    Z = torch::clamp_min(Z - tau, 0);
-    Z = torch::float_power(Z, (1 / (alpha - 1)));
-    return Z;
-}
-
-
-torch::Tensor sctn_check(
-    torch::Tensor Z,
-    torch::Tensor tauLo,
-    torch::Tensor tauHi,
+auto nsection_forward(
+    torch::Tensor x,
     float alpha,
-    int dim
-){
-    auto fLo = prob(Z, tauLo, alpha);
-    fLo = torch::sum(fLo,dim) - 1;
-    auto fHi = prob(Z, tauHi, alpha);
-    fHi = torch::sum(fHi,dim) - 1;
-    auto mask = torch::__and__((fLo > 0), (fHi <= 0));
-    auto out = torch::unsqueeze(mask, dim);
-    return out;
-}
-
-
-torch::Tensor nsection_forward(
-    torch::Tensor Z,
-    float alpha,
-    int dim,
-    int nIters,
+    int nIter,
     int nSections
 ){
-    auto shape = torch::_shape_as_tensor(Z);
+    auto options = torch::TensorOptions().device(torch::device_of(x));
+    auto shape = torch::_shape_as_tensor(x);
+    auto bsz = shape[0].item<int>();
     auto d = shape[1].item<int>();
+    auto df = shape[1].item<float>();
 
-    // calculate max 
-    auto max = torch::amax(Z, dim, true);
-    max = max * (alpha - 1);
-    Z = Z * (alpha - 1);
+    auto max = torch::amax(x, -1, true);
+    auto tauLo = max * (alpha - 1) - 1;
+    x = x * (alpha - 1);
 
-    // calculate starting tau high and low
-    auto tauLo = max - 1;
-    auto tauHi = max - pow(1 / (double) d, alpha - 1);
+    df = pow(df, alpha - 1);
+    auto tauWidth = (df - 1)/df;
+    auto tauFrac = torch::linspace(0,1,nSections, options);
 
-    auto sctnRng = tauHi - tauLo;
-    auto sctnTauLo = torch::zeros_like(tauLo);
-    auto sctnTauHi = torch::zeros_like(tauLo);
-    // input_mat_cuda = torch:zeros_like(...)
-    for(int i = 0; i < nIters; i++){
-        sctnRng /= nSections;
-        for(int j = 1; j < nSections+1; j++){
-            torch::add_outf(tauLo, sctnRng, j - 1, sctnTauLo);
-            torch::add_outf(tauLo, sctnRng, j, sctnTauHi);
-            auto mask = sctn_check(Z, sctnTauLo, sctnTauHi, alpha, dim);
-            torch::where_out(tauLo, mask, sctnTauLo, tauLo);
-        } 
+    auto taus = torch::empty({bsz,nSections}, options);
+    auto temp = torch::empty({bsz}, options);
+    // auto ps = torch::empty({bsz,nSections,d}, torch::dtype(torch::kFloat32).device(torch::device_of(x)));
+    auto ps = torch::empty({bsz,nSections,d}, options.dtype(torch::kFloat32));
+    auto psd = torch::empty({bsz,nSections,d}, options.dtype(torch::kFloat64));
+    auto obj = torch::empty({bsz,nSections}, options);
+    auto res = torch::empty({bsz,1}, options.dtype(torch::kInt64));
+    // double power = alpha - 1;options
+    for(int i = 0; i < nIter; i++){
+        torch::add_out(taus,tauLo,tauFrac,tauWidth);
+        torch::clamp_min_out(ps, torch::unsqueeze(x, -2) - torch::unsqueeze(taus, -1), 0);
+        torch::float_power_out(psd, ps, alpha - 1);
+        torch::sum_out(obj, psd, -1);
+        torch::searchsorted_out(res, -obj, -torch::ones({bsz,1}, options));
+        torch::index_out(temp, taus, {torch::arange(bsz, options), torch::clamp_min(torch::squeeze(res) - 1, 0)});
+        torch::unsqueeze_copy_out(tauLo, temp, -1);
+        tauWidth /= nSections;
     }
-    torch::Tensor p = prob(Z, tauLo, alpha);
-    p /= torch::unsqueeze(torch::sum(p,dim), dim);
+    auto p = torch::clamp_min(x - tauLo, 0);
+    p = torch::float_power(p, alpha - 1);
+    p /= torch::unsqueeze(torch::sum(p,-1), -1); 
     return p;
 }
 
 
 torch::Tensor sparsemax_backward(
     torch::Tensor Y,
-    torch::Tensor dY,
-    int dim
+    torch::Tensor dY
 ){
     auto gppr = torch::where(Y > 0, 1.0, 0.0);
     auto dX = dY * gppr;
-    auto q =  torch::sum(dX,dim) / torch::sum(gppr,dim);
-    q = torch::unsqueeze(q, dim);
+    auto q =  torch::sum(dX,-1) / torch::sum(gppr, -1);
+    q = torch::unsqueeze(q, -1);
     dX -= q * gppr;
     return dX;
 }
@@ -86,13 +64,12 @@ torch::Tensor sparsemax_backward(
 torch::Tensor entmax_backward(
     torch::Tensor Y,
     torch::Tensor dY,
-    torch::Tensor alpha,
-    int dim
+    torch::Tensor alpha
 ){
     auto gppr = torch::where(Y > 0, torch::float_power(Y, (2 - alpha)), torch::zeros({1}));
     auto dX = dY * gppr;
-    auto q =  torch::sum(dX,dim) / torch::sum(gppr,dim);
-    q = torch::unsqueeze(q, dim);
+    auto q =  torch::sum(dX,-1) / torch::sum(gppr,-1);
+    q = torch::unsqueeze(q, -1);
     dX -= q * gppr;
     return dX;
 }
