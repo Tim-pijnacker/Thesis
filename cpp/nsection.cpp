@@ -64,7 +64,7 @@ torch::Tensor sparsemax_backward(
 torch::Tensor entmax_backward(
     torch::Tensor Y,
     torch::Tensor dY,
-    torch::Tensor alpha
+    float alpha
 ){
     auto gppr = torch::where(Y > 0, torch::float_power(Y, (2 - alpha)), torch::zeros({1}));
     auto dX = dY * gppr;
