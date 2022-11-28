@@ -21,7 +21,7 @@ class EntmaxNsectFunction(Function):
             
             # compute all ps in one go
             ps = torch.clamp(x.unsqueeze(dim=-2) - taus.unsqueeze(dim=-1), min=0)
-            ps = ps ** (alpha - 1)
+            ps = ps ** (1/(alpha - 1))
             
             # compute normalization objective: will be decreasing.
             obj = ps.sum(dim=-1)
@@ -34,7 +34,7 @@ class EntmaxNsectFunction(Function):
             tau_lo = tau_lo.unsqueeze(-1)
             tau_width /= n_sections
 
-        p = torch.clamp(x - tau_lo, min=0) ** (alpha - 1)
+        p = torch.clamp(x - tau_lo, min=0) ** (1/(alpha - 1))
         p /= p.sum(dim=-1).unsqueeze(dim=-1)
         return p
 
