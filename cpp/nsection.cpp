@@ -34,7 +34,7 @@ auto nsection_forward(
     for(int i = 0; i < nIter; i++){
         torch::add_out(taus,tauLo,tauFrac,tauWidth);
         torch::clamp_min_out(ps, torch::unsqueeze(x, -2) - torch::unsqueeze(taus, -1), 0);
-        torch::float_power_out(psd, ps, alpha - 1);
+        torch::float_power_out(psd, ps, 1/(alpha - 1));
         torch::sum_out(obj, psd, -1);
         torch::searchsorted_out(res, -obj, -torch::ones({bsz,1}, options));
         torch::index_out(temp, taus, {torch::arange(bsz, options), torch::clamp_min(torch::squeeze(res) - 1, 0)});
@@ -42,7 +42,7 @@ auto nsection_forward(
         tauWidth /= nSections;
     }
     auto p = torch::clamp_min(x - tauLo, 0);
-    p = torch::float_power(p, alpha - 1);
+    p = torch::float_power(p, 1/(alpha - 1));
     p /= torch::unsqueeze(torch::sum(p,-1), -1); 
     return p;
 }
