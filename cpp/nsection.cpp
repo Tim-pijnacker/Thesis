@@ -25,12 +25,17 @@ auto nsection_forward(
 
     auto taus = torch::empty({bsz,nSections}, options);
     auto temp = torch::empty({bsz}, options);
-    // auto ps = torch::empty({bsz,nSections,d}, torch::dtype(torch::kFloat32).device(torch::device_of(x)));
-    auto ps = torch::empty({bsz,nSections,d}, options.dtype(torch::kFloat32));
+    auto ps = torch::empty({bsz,nSections,d}, options);
+
+    // the output given to float_power has dtype Float but the operation's result requires dtype Double
     auto psd = torch::empty({bsz,nSections,d}, options.dtype(torch::kFloat64));
     auto obj = torch::empty({bsz,nSections}, options);
+
+    // torch.searchsorted(): output tensor's dtype is wrong, it can only be Int(int32) or Long(int64)
     auto res = torch::empty({bsz,1}, options.dtype(torch::kInt64));
-    // double power = alpha - 1;options
+    
+    // IndexError: tensors used as indices must be long, byte or bool tensors
+    // auto res = torch::empty({bsz,1}, options.dtype(torch::kInt32));
     for(int i = 0; i < nIter; i++){
         torch::add_out(taus,tauLo,tauFrac,tauWidth);
         torch::clamp_min_out(ps, torch::unsqueeze(x, -2) - torch::unsqueeze(taus, -1), 0);
