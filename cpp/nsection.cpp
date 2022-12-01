@@ -9,7 +9,7 @@ auto nsection_forward(
     int nIter,
     int nSections
 ){
-    auto options = torch::TensorOptions().device(torch::device_of(x));
+    auto options = torch::TensorOptions().device(torch::device_of(x)).dtype(x.dtype());
     auto shape = torch::_shape_as_tensor(x);
     auto bsz = shape[0].item<int>();
     auto d = shape[1].item<int>();
@@ -33,23 +33,30 @@ auto nsection_forward(
 
     // torch.searchsorted(): output tensor's dtype is wrong, it can only be Int(int32) or Long(int64)
     auto res = torch::empty({bsz,1}, options.dtype(torch::kInt64));
-    
-    // IndexError: tensors used as indices must be long, byte or bool tensors
-    // auto res = torch::empty({bsz,1}, options.dtype(torch::kInt32));
+    auto onesVec = -torch::ones({bsz,1}, options);
+    auto arangeVec = torch::arange(bsz, options.dtype(torch::kInt64));
     for(int i = 0; i < nIter; i++){
         torch::add_out(taus,tauLo,tauFrac,tauWidth);
         torch::clamp_min_out(ps, torch::unsqueeze(x, -2) - torch::unsqueeze(taus, -1), 0);
         torch::float_power_out(psd, ps, 1/(alpha - 1));
         torch::sum_out(obj, psd, -1);
-        torch::searchsorted_out(res, -obj, -torch::ones({bsz,1}, options));
-        torch::index_out(temp, taus, {torch::arange(bsz, options), torch::clamp_min(torch::squeeze(res) - 1, 0)});
+        torch::searchsorted_out(res, -obj, onesVec);
+        torch::index_out(temp, taus, {arangeVec, torch::clamp_min(torch::squeeze(res) - 1, 0)});
         torch::unsqueeze_copy_out(tauLo, temp, -1);
         tauWidth /= nSections;
     }
+    
     auto p = torch::clamp_min(x - tauLo, 0);
     p = torch::float_power(p, 1/(alpha - 1));
-    p /= torch::unsqueeze(torch::sum(p,-1), -1); 
-    return p;
+
+    // i don't think dividing by the sum is necessary 
+    // auto pOut = torch::empty_like(x);
+    // torch::divide_out(pOut, p, torch::unsqueeze(torch::sum(p,-1), -1));
+
+    // i tried adding this statement to prevent nan's in the output, but they still appear
+    // so the nan's probably come from casting float64 into float32
+    // torch::nan_to_num_out(p, p);
+    return p.to(x.dtype());
 }
 
 
