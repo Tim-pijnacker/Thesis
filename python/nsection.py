@@ -10,7 +10,7 @@ class EntmaxNsectFunction(Function):
         x = x * (alpha - 1)
         tau_lo = x_max * (alpha - 1) - 1
 
-        d = d ** (alpha - 1)
+        d = d ** (alpha - 1) 
         tau_width = (d - 1) / d  
         tau_frac = torch.linspace(0, 1, n_sections, device=x.device)
 
@@ -18,14 +18,13 @@ class EntmaxNsectFunction(Function):
 
             # generate sections
             taus = tau_lo + tau_width * tau_frac
-            
+
             # compute all ps in one go
             ps = torch.clamp(x.unsqueeze(dim=-2) - taus.unsqueeze(dim=-1), min=0)
             ps = ps ** (1/(alpha - 1))
             
             # compute normalization objective: will be decreasing.
             obj = ps.sum(dim=-1)
-            
             res = torch.searchsorted(-obj, -torch.ones(x.shape[:-1] + (1,), device=x.device))
             res = res.squeeze()
 
