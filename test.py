@@ -25,9 +25,9 @@ def test_nsection_out(alpha, dtype):
     assert torch.sum((y_hat_cpp - y_true) ** 2) < 1e-7
 
 torch.manual_seed(42)
-x = torch.randn(5,10,device=torch.device("cuda:0"), dtype=torch.float32)
-out_cuda = nsection_cuda.forward(x, 1.5, 1, 5)
-out_py = entmax_nsect(x, 1.5, 1, 5)
+x = torch.randn(10,5,device=torch.device("cuda:0"), dtype=torch.float32)
+out_cuda = nsection_cuda.forward(x, 1.5, 5, 5)
+out_py = entmax_nsect(x, 1.5, 5, 5)
 
 print(out_cuda)
 print(out_py)
