@@ -32,6 +32,21 @@ __global__ void entmax_cuda_forward_kernel(
     }
     
 }
+
+template <typename scalar_t>
+__global__ void entmax_cuda_tauLo_kernel(
+    const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> res,
+    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo,
+    scalar_t tauWidth
+){
+    const int index = threadIdx.x;
+    
+    if(index < res.size(0)){
+        const auto section = ((res[index][0] - 1.0) < 0.0) ? 0.0 : (res[index][0] - 1.0); 
+        tauLo[index][0] = tauLo[index][0] + section*tauWidth;
+    }
+    
+}
 } // namespace
 
 
@@ -60,12 +75,14 @@ torch::Tensor entmax_cuda_forward(
     // vectors for searchsorted and index
     auto obj = torch::empty({bsz,nSections}, options);
     auto res = torch::empty({bsz,1}, options.dtype(torch::kInt64));
+    auto resf = torch::empty({bsz,1}, options);
     auto onesVec = -torch::ones({bsz,1}, options);
     auto temp = torch::empty({bsz}, options);
     auto zero = torch::zeros({1}, options.dtype(torch::kInt64));
     
     const int threads = 1024;
     const dim3  blocks((d + threads - 1) / threads, nSections, bsz);
+    const dim3  blocks2((bsz + threads - 1) / threads, 1, 1);
 
     for(int i = 0; i < nIters; i++){
         // torch::zero_out(p, p);
@@ -85,6 +102,19 @@ torch::Tensor entmax_cuda_forward(
 
         torch::sum_out(obj, p, -1);
         torch::searchsorted_out(res, -obj, onesVec);
+        resf = res.to(x.dtype());
+
+        AT_DISPATCH_FLOATING_TYPES(x.type(), "lltm_tauLo_cuda", ([&] {
+            entmax_cuda_tauLo_kernel<scalar_t><<<blocks2, threads>>>(
+                resf.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauWidth
+                );
+        }));
+        // cudaDeviceSynchronize();
     }
-    return res;
+    auto z = torch::clamp_min(x - tauLo, 0.0);
+    auto pOut = torch::float_power(z, 1.0/(alpha - 1.0));
+    // return pOut.to(x.dtype());
+    return tauLo;
 }
