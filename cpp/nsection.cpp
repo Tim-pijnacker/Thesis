@@ -21,7 +21,7 @@ auto nsection_forward(
 
     df = pow(df, alpha - 1);
     auto tauWidth = (df - 1)/df;
-    auto tauFrac = torch::linspace(0,1,nSections, options);
+    auto tauFrac = torch::linspace(0, (((float) nSections - 1.0) / (float) nSections), nSections, options);
 
     auto taus = torch::empty({bsz,nSections}, options);
     auto temp = torch::empty({bsz}, options);
@@ -35,29 +35,23 @@ auto nsection_forward(
     auto res = torch::empty({bsz,1}, options.dtype(torch::kInt64));
     auto onesVec = -torch::ones({bsz,1}, options);
     auto arangeVec = torch::arange(bsz, options.dtype(torch::kInt64));
+
     for(int i = 0; i < nIter; i++){
         torch::add_out(taus,tauLo,tauFrac,tauWidth);
         torch::clamp_min_out(ps, torch::unsqueeze(x, -2) - torch::unsqueeze(taus, -1), 0);
-        torch::float_power_out(psd, ps, 1/(alpha - 1));
+        torch::float_power_out(psd, ps, 1.0/(alpha - 1.0));
         torch::sum_out(obj, psd, -1);
-        torch::searchsorted_out(res, -obj, onesVec);
-        torch::index_out(temp, taus, {arangeVec, torch::clamp_min(torch::squeeze(res) - 1, 0)});
+        torch::searchsorted_out(res, -obj, onesVec, false, true);
+        torch::index_out(temp, taus, {arangeVec, torch::squeeze(res) - 1});
         torch::unsqueeze_copy_out(tauLo, temp, -1);
         tauWidth /= nSections;
     }
     
     auto p = torch::clamp_min(x - tauLo, 0);
-    p = torch::float_power(p, 1/(alpha - 1));
-
-    // i don't think dividing by the sum is necessary 
-    // auto pOut = torch::empty_like(x);
-    // torch::divide_out(pOut, p, torch::unsqueeze(torch::sum(p,-1), -1));
-
-    // i tried adding this statement to prevent nan's in the output, but they still appear
-    // so the nan's probably come from casting float64 into float32
-    // torch::nan_to_num_out(p, p);
+    p = torch::float_power(p, 1.0/(alpha - 1.0));
     return p.to(x.dtype());
 }
+
 
 
 torch::Tensor sparsemax_backward(
