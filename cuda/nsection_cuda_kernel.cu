@@ -27,6 +27,7 @@ __global__ void entmax_cuda_forward_kernel(
     const int section = blockIdx.y;
     
     if(col < x.size(1)){
+        // change order of taus to prevent -obj
         const auto sctnTau = tauLo[row][0] + section*tauWidth;
         p[row][section][col] = prob(x[row][col], sctnTau, alpha);
     }
@@ -42,8 +43,7 @@ __global__ void entmax_cuda_tauLo_kernel(
     const int index = threadIdx.x;
     
     if(index < res.size(0)){
-        const auto section = ((res[index][0] - 1.0) < 0.0) ? 0.0 : (res[index][0] - 1.0); 
-        tauLo[index][0] = tauLo[index][0] + section*tauWidth;
+        tauLo[index][0] = tauLo[index][0] + (res[index][0] - 1.0)*tauWidth;
     }
     
 }
@@ -85,9 +85,7 @@ torch::Tensor entmax_cuda_forward(
     const dim3  blocks2((bsz + threads - 1) / threads, 1, 1);
 
     for(int i = 0; i < nIters; i++){
-        // torch::zero_out(p, p);
-
-        tauWidth /= (nSections - 1.0);
+        tauWidth /= (nSections);
 
         AT_DISPATCH_FLOATING_TYPES(x.type(), "lltm_forward_cuda", ([&] {
             entmax_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
@@ -101,7 +99,7 @@ torch::Tensor entmax_cuda_forward(
         // cudaDeviceSynchronize();
 
         torch::sum_out(obj, p, -1);
-        torch::searchsorted_out(res, -obj, onesVec);
+        torch::searchsorted_out(res, -obj, onesVec, false, true);
         resf = res.to(x.dtype());
 
         AT_DISPATCH_FLOATING_TYPES(x.type(), "lltm_tauLo_cuda", ([&] {
@@ -115,6 +113,5 @@ torch::Tensor entmax_cuda_forward(
     }
     auto z = torch::clamp_min(x - tauLo, 0.0);
     auto pOut = torch::float_power(z, 1.0/(alpha - 1.0));
-    // return pOut.to(x.dtype());
-    return tauLo;
+    return pOut.to(x.dtype());
 }
