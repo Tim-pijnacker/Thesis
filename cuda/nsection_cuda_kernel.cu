@@ -22,12 +22,11 @@ __global__ void entmax_cuda_forward_kernel(
     scalar_t alpha,
     scalar_t tauWidth
 ){
-    const int col = blockIdx.x * threadIdx.x + threadIdx.x;
+    const int col = blockIdx.x * blockDim.x + threadIdx.x;
     const int row = blockIdx.z;
     const int section = blockIdx.y;
     
     if(col < x.size(1)){
-        // change order of taus to prevent -obj
         const auto sctnTau = tauLo[row][0] + section*tauWidth;
         p[row][section][col] = prob(x[row][col], sctnTau, alpha);
     }
@@ -40,7 +39,7 @@ __global__ void entmax_cuda_tauLo_kernel(
     torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo,
     scalar_t tauWidth
 ){
-    const int index = threadIdx.x;
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
     
     if(index < res.size(0)){
         tauLo[index][0] = tauLo[index][0] + (res[index][0] - 1.0)*tauWidth;
@@ -96,7 +95,7 @@ torch::Tensor entmax_cuda_forward(
                 tauWidth
                 );
         }));
-        // cudaDeviceSynchronize();
+        cudaDeviceSynchronize();
 
         torch::sum_out(obj, p, -1);
         torch::searchsorted_out(res, -obj, onesVec, false, true);
@@ -109,7 +108,7 @@ torch::Tensor entmax_cuda_forward(
                 tauWidth
                 );
         }));
-        // cudaDeviceSynchronize();
+        cudaDeviceSynchronize();
     }
     auto z = torch::clamp_min(x - tauLo, 0.0);
     auto pOut = torch::float_power(z, 1.0/(alpha - 1.0));
