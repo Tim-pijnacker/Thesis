@@ -7,12 +7,16 @@ import nsection_cpp
 
 class EntmaxNsectFunction(Function):
     @classmethod
-    def forward(cls, ctx, X, alpha=1.5, n_iter=5, n_sections=5):
+    def forward(cls, ctx, X, alpha=1.5, n_iter=5, n_sections=5, ensure_sum_one=True):
         ctx.alpha = alpha
 
         p_m = nsection_cpp.forward(X, alpha, n_iter, n_sections)
 
         ctx.save_for_backward(p_m)
+
+        if ensure_sum_one:
+            p_m /= p_m.sum(dim=-1).unsqueeze(dim=-1)
+
         return p_m
 
     @classmethod
