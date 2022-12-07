@@ -4,7 +4,7 @@ from torch.autograd import Function
 
 class EntmaxNsectFunction(Function):
     @classmethod
-    def forward(cls, ctx, x, alpha, n_iter, n_sections):
+    def forward(cls, ctx, x, alpha, n_iter, n_sections, ensure_sum_one=True):
         bsz, d = x.shape
         x_max, _ = x.max(dim=-1, keepdim=True)
         x = x * (alpha - 1)
@@ -35,7 +35,10 @@ class EntmaxNsectFunction(Function):
             tau_width /= n_sections
 
         p = torch.clamp(x - tau_lo, min=0) ** (1/(alpha - 1))
-        p /= p.sum(dim=-1).unsqueeze(dim=-1)
+
+        if ensure_sum_one:
+            p /= p.sum(dim=-1).unsqueeze(dim=-1)
+
         return p
 
     
