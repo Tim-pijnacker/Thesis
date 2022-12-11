@@ -1,6 +1,8 @@
 import torch
 import pickle
 import os
+import matplotlib.pyplot as plt
+import numpy as np
 
 import torch.utils.benchmark as benchmark
 from itertools import product
@@ -32,44 +34,75 @@ class benchmarker():
         self.rows = rows
         self.cols = cols
         self.models=models
+
+        self.label = 'entmax, bisect and softmax time'
         self._settings_dict = self._create_settings_dict()
 
         self.row_str = str(self.rows).replace(" ", "")
         self.col_str = str(self.cols).replace(" ", "")
-        self.path = f"benchmark/bench_{self.row_str}_{self.col_str}"
+        self.path_bench = f"benchmark/bench_{self.row_str}_{self.col_str}"
+        self.path_plot = f"benchmark/plot_{self.row_str}_{self.col_str}"
 
-        self._load()
+        self._load_bench()
+        self._load_plot()
 
-
-    def _save(self) -> bool:
+    def _save_bench(self) -> bool:
         """Save index to disk."""
 
-        if self.path is None:
+        if self.path_bench is None:
             return False
 
-        if not os.path.isdir(self.path):
-            os.makedirs(self.path)
+        if not os.path.isdir(self.path_bench):
+            os.makedirs(self.path_bench)
 
-        with open(os.path.join(self.path, f"bench_{self.row_str}_{self.col_str}.pkl"), "wb") as f:
+        with open(os.path.join(self.path_bench, f"bench_{self.row_str}_{self.col_str}.pkl"), "wb") as f:
             pickle.dump(self._bench_list, f)
 
         return True
 
-
-    def _load(self) -> bool:
+    def _load_bench(self) -> bool:
         """Load index from disk."""
 
-        if self.path is None:
+        if self.path_bench is None:
             return False
 
-        if not os.path.isdir(self.path):
+        if not os.path.isdir(self.path_bench):
             return False
 
-        with open(os.path.join(self.path, f"bench_{str(self.row_str)}_{str(self.col_str)}.pkl"), "rb") as f:
+        with open(os.path.join(self.path_bench, f"bench_{str(self.row_str)}_{str(self.col_str)}.pkl"), "rb") as f:
             self._bench_list = pickle.load(f)
 
         return True
+    
+    def _save_plot(self) -> bool:
+        """Save index to disk."""
 
+        if self.path_plot is None:
+            return False
+
+        if not os.path.isdir(self.path_plot):
+            os.makedirs(self.path_plot)
+
+        with open(os.path.join(self.path_plot, f"plot_{self.row_str}_{self.col_str}.pkl"), "wb") as f:
+            pickle.dump(self._plot_dict, f)
+
+        return True
+
+    def _load_plot(self) -> bool:
+        """Load index from disk."""
+
+        if self.path_plot is None:
+            return False
+
+        if not os.path.isdir(self.path_plot):
+            return False
+
+        with open(os.path.join(self.path_plot, f"plot_{str(self.row_str)}_{str(self.col_str)}.pkl"), "rb") as f:
+            self._plot_dict = pickle.load(f)
+            self.x_vals = self._plot_dict["x"]
+            del self._plot_dict["x"]
+
+        return True
 
     def _create_settings_dict(self):
         settings_dict = defaultdict()
@@ -93,7 +126,6 @@ class benchmarker():
             settings_dict[model] = model_dict
         return settings_dict
 
-
     def _time_model(self, x, model, sub_label, num_threads):
         timer = benchmark.Timer(
             stmt=self._settings_dict[model]['stmt'],
@@ -106,11 +138,9 @@ class benchmarker():
         ).timeit(100)
 
         return timer
-    
 
     def _create_bench_list(self, threads):
         self._bench_list = []
-        self.label = 'entmax, bisect and softmax time'
 
         for r, c in product(self.rows, self.cols):
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
@@ -118,18 +148,62 @@ class benchmarker():
             for thread in threads:
                 for model in self.models:
                     self._bench_list.append(self._time_model(x, model, sub_label, thread))
-
-
-    def initialise(self, threads=[1,4,16,32]):
-        self._create_bench_list(threads=threads)
-        self._save()
     
+    def _create_plot_list(self, x_len,start):
+        self._plot_dict = defaultdict()
+
+        self.x_vals = []
+        for i in range(1,x_len+1):
+            self.x_vals.append(i*start)
+
+        self._plot_dict["x"] = self.x_vals
+
+        for r in self.rows:
+            row_dict = defaultdict(list)
+            for c in self.x_vals:
+                x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
+                sub_label = f'[{r}, {c}]'
+                for model in self.models:
+                    t = self._time_model(x, model, sub_label, 1)
+                    row_dict[model].append(t.mean)
+            self._plot_dict[r] = row_dict
+
+    def initialise_bench(self, threads=[1,4,16,32]):
+        self._create_bench_list(threads=threads)
+        self._save_bench()
+    
+    def initialise_plot(self, x_len=10, start=1000):
+        self._create_plot_list(x_len=x_len,start=start)
+        self._save_plot()
 
     def compare(self):
         compare = benchmark.Compare(self._bench_list)
         compare.colorize()
         compare.print()
 
+    def plot(self):
+        if "x" in self._plot_dict.keys():
+            self.x_vals = self._plot_dict["x"]
+            del self._plot_dict["x"]
 
-    def plots(self):
-        pass
+        n_plots = len(self._plot_dict.keys())
+        fig, axs = plt.subplots(1, n_plots, figsize=(10, 6))
+        fig.suptitle("Time plots for differnet input sizes")
+        for idx, n_rows in enumerate(self._plot_dict.keys()):
+            for model in self.models:
+                axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
+                axs[idx].set(xlabel='input dimension', ylabel='time (s)')
+            axs[idx].set_title(f'{n_rows} input rows ')
+        fig.legend(labels=self.models)
+        plt.show()
+
+
+def main():
+    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [1000, 10000])
+    # bench.initialise_bench()
+    # bench.initialise_plot()
+    bench.compare()
+    bench.plot()
+
+if __name__ == "__main__":
+    main()
