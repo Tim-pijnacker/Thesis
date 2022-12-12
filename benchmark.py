@@ -167,6 +167,24 @@ class benchmarker():
                     t = self._time_model(x, model, sub_label, 1)
                     row_dict[model].append(t.mean)
             self._plot_dict[r] = row_dict
+            
+    def add_model_bench(self, new_model, stmt, setup, threads=[1,4,16,32]):
+        model_dict = defaultdict()
+        model_dict["stmt"] = stmt
+        model_dict["setup"] = setup
+        self._settings_dict[new_model] = model_dict
+        
+        for r, c in product(self.rows, self.cols):
+            x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
+            sub_label = f'[{r}, {c}]'
+            for thread in threads:
+                self._bench_list.append(self._time_model(x, new_model, sub_label, thread))
+                
+    def del_model_bench(self, del_model, threads=[1,4,16,32]):
+        del self._settings_dict[del_model]
+        
+        for thread in threads:
+            self._bench_list.pop(-1)
 
     def initialise_bench(self, threads=[1,4,16,32]):
         self._create_bench_list(threads=threads)
