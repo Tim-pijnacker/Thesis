@@ -117,6 +117,9 @@ class benchmarker():
             elif model == "cuda":
                 model_dict['stmt'] = f'entmax_nsect_cuda(x, alpha = {self.alpha}, n_iter={self.nsct_iter}, n_sections={self.n_sections})'
                 model_dict['setup'] = 'from cuda.nsection import entmax_nsect_cuda'
+            elif model == "cuda1":
+                model_dict['stmt'] = f'entmax_nsect_cuda1(x, alpha = {self.alpha}, n_iter={self.nsct_iter}, n_sections={self.n_sections})'
+                model_dict['setup'] = 'from cuda.nsection import entmax_nsect_cuda1'
             elif model == "bisct":
                 model_dict['stmt'] = f'entmax_bisect(x, alpha = {self.alpha}, n_iter={self.bisct_iter})'
                 model_dict['setup'] = 'from entmax import entmax_bisect'
@@ -217,13 +220,11 @@ class benchmarker():
 
 
 def main():
-    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [1000, 10000])
-    print("initialising bench...")
-    bench.initialise_bench()
-    print("initialising plot...")
-    bench.initialise_plot()
+    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000], models=["py", "cuda", "cuda1", "bisct"])
+    bench.initialise_bench(threads=[1])
+    # bench.initialise_plot()
     bench.compare()
-    bench.plot()
+    # bench.plot()
 
 if __name__ == "__main__":
     main()
