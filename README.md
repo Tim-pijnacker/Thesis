@@ -6,4 +6,4 @@ https://trite-eocursor-08b.notion.site/Thesis-Home-1da7ccfd5f0346068f0e863910ea3
 
 # Most recent benchmark results: 
 
-<img src="benchmark unrolled kernel1.JPG" />
+<img src="benchmark_unrolled_kernel1.JPG" />
