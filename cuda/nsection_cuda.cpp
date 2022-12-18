@@ -9,6 +9,13 @@ torch::Tensor entmax_cuda_forward(
     int nSections
 );
 
+// torch::Tensor entmax_cuda_forward1(
+//     torch::Tensor Z,
+//     float alpha,
+//     int nIters,
+//     int nSections
+// );
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
@@ -23,6 +30,17 @@ torch::Tensor nsection_forward(
 
     return entmax_cuda_forward(Z, alpha, nIters, nSections);
 }
+
+// torch::Tensor nsection_forward1(
+//     torch::Tensor Z,
+//     float alpha,
+//     int nIters,
+//     int nSections
+// ){
+//     CHECK_INPUT(Z);
+
+//     return entmax_cuda_forward1(Z, alpha, nIters, nSections);
+// }
 
 torch::Tensor sparsemax_backward(
     torch::Tensor Y,
@@ -52,6 +70,7 @@ torch::Tensor entmax_backward(
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m){
     m.def("forward", &nsection_forward, "nsection forward");
+    // m.def("forward1", &nsection_forward1, "nsection forward1");
     m.def("sparsemax_backward", &sparsemax_backward, "Sparsemax backward");
     m.def("entmax_backward", &entmax_backward, "Entmax backward");
 }
