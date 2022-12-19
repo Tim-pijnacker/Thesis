@@ -6,9 +6,6 @@
 #include <vector>
 #include <stdio.h>
 
-#define THREAD_1024 1024
-#define THREAD_256 256
-
 namespace {
 template <unsigned int blockSize>
 __device__ __forceinline__ void warpReduceSum(volatile float* shmem_ptr, int tid){
@@ -60,30 +57,37 @@ __global__ void p_reduction_kernel(
     const int i = blockIdx.x*(blockDim.x * 2) + threadIdx.x;
     extern __shared__ float block_vec[];
     
+    const int max = x.size(1) - blockDim.x;
     // do first step of the sum in the loading part
-    if ((i + blockDim.x) < x.size(1)){
-        const auto sctnTau = tauLo[row][0] + section*tauWidth;
-        block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+    if (i < x.size(1)) {
+        if (i < max) {
+            const auto sctnTau = tauLo[row][0] + section*tauWidth;
+            block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+        }
+        if (i >= max) {
+            const auto sctnTau = tauLo[row][0] + section*tauWidth;
+            block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+        }
     }
-    else if (i < x.size(1)){
-        const auto sctnTau = tauLo[row][0] + section*tauWidth;
-        block_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
-
-    }
-    else {
+    if (i >= x.size(1)){
         block_vec[threadIdx.x] = 0.0;
     }
     __syncthreads();
 
-    // // iterate of log base 2 the block dimension
-    // for (int s = blockDim.x / 2; s > 32; s >>= 1){
-    //     // only part of the threads are active
-    //     if (threadIdx.x < s){
-    //         block_vec[threadIdx.x] += block_vec[threadIdx.x + s];
-    //     }
-    //     __syncthreads();
+    // // do first step of the sum in the loading part
+    // if ((i + blockDim.x) < x.size(1)){
+    //     const auto sctnTau = tauLo[row][0] + section*tauWidth;
+    //     block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
     // }
+    // if (i < x.size(1)){
+    //     const auto sctnTau = tauLo[row][0] + section*tauWidth;
+    //     block_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
 
+    // }
+    // if (i >= x.size(1)) {
+    //     block_vec[threadIdx.x] = 0.0;
+    // }
+   
     if (blockSize >= 256) {
         if (threadIdx.x < 128) {block_vec[threadIdx.x] += block_vec[threadIdx.x + 128];} __syncthreads(); }
     if (blockSize >= 128) {
@@ -109,18 +113,31 @@ __global__ void sum_reduction_kernel(
 
     const int i = blockIdx.x*(blockDim.x * 2) + threadIdx.x;
     extern __shared__ float sum_vec[];
-    
+
+    const int max = blockSum.size(2) - blockDim.x;
     // do first step of the sum in the loading part
-    if ((i + blockDim.x) < blockSum.size(2)){
-        sum_vec[threadIdx.x] = blockSum[row][section][i] + blockSum[row][section][i + blockDim.x];
+    if (i < blockSum.size(2)) {
+        if (i < max) {
+            sum_vec[threadIdx.x] = blockSum[row][section][i] + blockSum[row][section][i + blockDim.x];
+        }
+        if (i >= max) {
+            sum_vec[threadIdx.x] = blockSum[row][section][i];
+        }
     }
-    else if (i < blockSum.size(2)){
-        sum_vec[threadIdx.x] = blockSum[row][section][i];
-    }
-    else {
+    if (i >= blockSum.size(2)){
         sum_vec[threadIdx.x] = 0.0;
     }
     __syncthreads();
+    // if ((i + blockDim.x) < blockSum.size(2)){
+    //     sum_vec[threadIdx.x] = blockSum[row][section][i] + blockSum[row][section][i + blockDim.x];
+    // }
+    // if (i < blockSum.size(2)){
+    //     sum_vec[threadIdx.x] = blockSum[row][section][i];
+    // }
+    // if (i >= blockSum.size(2)){
+    //     sum_vec[threadIdx.x] = 0.0;
+    // }
+    
 
     // iterate of log base 2 the block dimension
     for (int s = blockDim.x / 2; s > 0; s >>= 1){
@@ -130,10 +147,6 @@ __global__ void sum_reduction_kernel(
         }
         __syncthreads();
     }
-
-    // if (threadIdx.x < 32) {
-    //     warpReduceSum(sum_vec, threadIdx.x);
-    // }
     
     // thread 0 contains the final sum
     if (threadIdx.x == 0){
@@ -151,15 +164,19 @@ __global__ void tauLo_kernel(
 ){
     const int row = blockIdx.x;
     const int section = threadIdx.x;
+    const int maxSctn = pSum.size(1);
 
     // initialise first section
     extern __shared__ int firstSection[];
     if (pSum[row][section] < 1.0){
         firstSection[section] = section;
     }
-    else {
-        firstSection[section] = pSum.size(1);
+    if (pSum[row][section] >= 1.0){
+        firstSection[section] = maxSctn;
     }
+    // else {
+    //     firstSection[section] = pSum.size(1);
+    // }
     __syncthreads();
 
     // iterate of log base 2 the block dimension
@@ -175,7 +192,6 @@ __global__ void tauLo_kernel(
     
     // thread 0 contains the final sum
     if (section == 0){
-        // printf("row: %d, res: %d\n", row, firstSection[0]);
         tauLo[row][0] = tauLo[row][0] + (firstSection[0] - 1) * tauWidth;
     }
 }
@@ -239,48 +255,24 @@ torch::Tensor entmax_cuda_forward(
         threadsP = 128;
         threadsSum = 32; // 64
     }
-    // const int threadsP = THREAD_1024;
-    // const int threadsSum = THREAD_256;
     const int threadsTau = nSections;
 
     const int blocksdim = (d + threadsP - 1) / threadsP;
 
     const dim3  blocksP((blocksdim + 1) / 2, nSections, bsz);
-    // const dim3  blocksSum(((blocksdim + threadsSum - 1) / threadsSum), nSections, bsz);
     const dim3  blocksSum(1, nSections, bsz);
     const dim3  blocksTau(bsz, 1, 1);
     const dim3  blocksPout(blocksdim, bsz, 1);
 
     auto blockSum = torch::zeros({bsz, nSections, blocksdim}, options);
     auto pSum = torch::zeros({bsz, nSections}, options);
-    // auto sctn = torch::zeros({bsz}, options);
 
     for(int i = 0; i < nIters; i++){
         tauWidth /= (nSections);
 
-        // // kernel for sum over threads in blocks
-        // AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //     p_reduction_kernel<scalar_t><<<blocksP, threadsP, threadsP*4>>>(
-        //         x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //         tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //         blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //         alpha,
-        //         tauWidth
-        //         );
-        // }));
-
+        // kernel for sum over treads in bloock
         switch (threadsP)
         {
-        case 512:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
         case 256:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
                 p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
@@ -311,68 +303,7 @@ torch::Tensor entmax_cuda_forward(
                     tauWidth
                     );
             })); break;
-        case 32:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 16:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 16><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 8:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 8><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 4:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 4><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 2:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 2><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 1:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 1><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
         }
-
 
         // kernel for sum over blocks in grid
         AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
