@@ -66,27 +66,13 @@ __global__ void p_reduction_kernel(
         }
         if (i >= max) {
             const auto sctnTau = tauLo[row][0] + section*tauWidth;
-            block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+            block_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
         }
     }
     if (i >= x.size(1)){
         block_vec[threadIdx.x] = 0.0;
     }
     __syncthreads();
-
-    // // do first step of the sum in the loading part
-    // if ((i + blockDim.x) < x.size(1)){
-    //     const auto sctnTau = tauLo[row][0] + section*tauWidth;
-    //     block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
-    // }
-    // if (i < x.size(1)){
-    //     const auto sctnTau = tauLo[row][0] + section*tauWidth;
-    //     block_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
-
-    // }
-    // if (i >= x.size(1)) {
-    //     block_vec[threadIdx.x] = 0.0;
-    // }
    
     if (blockSize >= 256) {
         if (threadIdx.x < 128) {block_vec[threadIdx.x] += block_vec[threadIdx.x + 128];} __syncthreads(); }
@@ -127,17 +113,7 @@ __global__ void sum_reduction_kernel(
     if (i >= blockSum.size(2)){
         sum_vec[threadIdx.x] = 0.0;
     }
-    __syncthreads();
-    // if ((i + blockDim.x) < blockSum.size(2)){
-    //     sum_vec[threadIdx.x] = blockSum[row][section][i] + blockSum[row][section][i + blockDim.x];
-    // }
-    // if (i < blockSum.size(2)){
-    //     sum_vec[threadIdx.x] = blockSum[row][section][i];
-    // }
-    // if (i >= blockSum.size(2)){
-    //     sum_vec[threadIdx.x] = 0.0;
-    // }
-    
+    __syncthreads();    
 
     // iterate of log base 2 the block dimension
     for (int s = blockDim.x / 2; s > 0; s >>= 1){
