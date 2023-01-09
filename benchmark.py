@@ -216,6 +216,7 @@ class benchmarker():
             for model in self.models:
                 axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
                 axs[idx].set(xlabel='input dimension', ylabel='time (s)')
+                axs[idx].set_xscale('log', base=2)
             axs[idx].set_title(f'{n_rows} input rows ')
         fig.legend(labels=self.models)
         plt.show()
@@ -223,10 +224,10 @@ class benchmarker():
 
 def main():
     bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000])
-    bench.initialise_bench(threads=[1, 4, 8])
+    # bench.initialise_bench(threads=[1, 4, 8])
     # bench.initialise_plot()
     bench.compare()
-    # bench.plot()
+    bench.plot()
 
 if __name__ == "__main__":
     main()
