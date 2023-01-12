@@ -225,16 +225,11 @@ class benchmarker():
 
 
 def main():
-    prod = product([10, 100], [100, 1000, 10000])
-    prod = list(prod)
-    prod.append((32000, 64))
-    for r, c in prod:
-        print(r,c)
-    # bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000])
-    # bench.initialise_bench(threads=[1, 8])
-    # bench.initialise_plot()
-    # bench.compare()
-    # bench.plot()
+    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000])
+    bench.initialise_bench(threads=[1, 8])
+    bench.initialise_plot()
+    bench.compare()
+    bench.plot()
 
 if __name__ == "__main__":
     main()
