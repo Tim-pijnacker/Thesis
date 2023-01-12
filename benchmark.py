@@ -146,6 +146,7 @@ class benchmarker():
         self._bench_list = []
 
         prod = product(self.rows, self.cols)
+        prod = list(prod)
         prod.append((32000, 64))
         for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
