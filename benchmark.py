@@ -145,19 +145,21 @@ class benchmarker():
     def _create_bench_list(self, threads):
         self._bench_list = []
 
-        for r, c in product(self.rows, self.cols):
+        prod = product(self.rows, self.cols)
+        prod.append((32000, 64))
+        for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
             for thread in threads:
                 for model in self.models:
                     self._bench_list.append(self._time_model(x, model, sub_label, thread))
     
-    def _create_plot_list(self, x_len,start):
+    def _create_plot_list(self, x_len,base):
         self._plot_dict = defaultdict()
         
         self.x_vals = []
-        for i in range(1,x_len+1):
-            self.x_vals.append(i*start)
+        for i in range(x_len):
+            self.x_vals.append(base ** (7 + i))
 
         self._plot_dict["x"] = self.x_vals
 
@@ -195,8 +197,8 @@ class benchmarker():
         self._create_bench_list(threads=threads)
         self._save_bench()
     
-    def initialise_plot(self, x_len=10, start=1000):
-        self._create_plot_list(x_len=x_len,start=start)
+    def initialise_plot(self, x_len=9, base=2):
+        self._create_plot_list(x_len=x_len,base=base)
         self._save_plot()
 
     def compare(self):
@@ -224,8 +226,8 @@ class benchmarker():
 
 def main():
     bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000])
-    # bench.initialise_bench(threads=[1, 4, 8])
-    # bench.initialise_plot()
+    bench.initialise_bench(threads=[1, 8])
+    bench.initialise_plot()
     bench.compare()
     bench.plot()
 
