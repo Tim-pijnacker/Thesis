@@ -89,6 +89,54 @@ __global__ void p_reduction_kernel(
     }
 }
 
+//----------------------------------------------------------------------
+template <typename scalar_t, unsigned int blockSize>
+__global__ void p_reduction_kernel_lowdim(
+    const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> x,
+    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo,
+    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> pSum,
+    scalar_t alpha,
+    scalar_t tauWidth
+){
+    const int row = blockIdx.z;
+    const int section = blockIdx.y;
+
+    const int i = blockIdx.x*(blockDim.x * 2) + threadIdx.x;
+    extern __shared__ float row_vec[];
+    
+    const int max = x.size(1) - blockDim.x;
+    // do first step of the sum in the loading part
+    if (i < x.size(1)) {
+        if (i < max) {
+            const auto sctnTau = tauLo[row][0] + section*tauWidth;
+            row_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+        }
+        if (i >= max) {
+            const auto sctnTau = tauLo[row][0] + section*tauWidth;
+            row_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
+        }
+    }
+    if (i >= x.size(1)){
+        row_vec[threadIdx.x] = 0.0;
+    }
+    __syncthreads();
+   
+    if (blockSize >= 256) {
+        if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
+    if (blockSize >= 128) {
+        if (threadIdx.x <  64) {row_vec[threadIdx.x] += row_vec[threadIdx.x +  64];} __syncthreads(); }
+
+    if (threadIdx.x < 32) {
+        warpReduceSum<blockSize>(row_vec, threadIdx.x);
+    }
+    
+    // let thread 0 for this block write to global memory 
+    if (threadIdx.x == 0){
+        blockSum[row][section] = row_vec[0];
+    }
+}
+//----------------------------------------------------------------------
+
 template <typename scalar_t>
 __global__ void sum_reduction_kernel(
     torch::PackedTensorAccessor<scalar_t,3,torch::RestrictPtrTraits,size_t> blockSum,
@@ -189,6 +237,7 @@ __global__ void p_out_kernel(
 
 } // namespace
 
+// Standard cuda kernel
 torch::Tensor entmax_cuda_forward(
     torch::Tensor x,
     float alpha,
@@ -235,6 +284,7 @@ torch::Tensor entmax_cuda_forward(
 
     const int blocksdim = (d + threadsP - 1) / threadsP;
 
+    // each thread does double work while loading, so divide threads by two
     const dim3  blocksP((blocksdim + 1) / 2, nSections, bsz);
     const dim3  blocksSum(1, nSections, bsz);
     const dim3  blocksTau(bsz, 1, 1);
@@ -288,6 +338,146 @@ torch::Tensor entmax_cuda_forward(
                 pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>()
                 );
         }));
+
+        // kernel for updating tauLo
+        AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+            tauLo_kernel<scalar_t><<<blocksTau, threadsTau, nSections*4>>>(
+                pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauWidth
+                );
+        }));
+    }
+
+    auto pOut = torch::zeros_like(x);
+    // kernel for sum over threads in blocks
+    AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        p_out_kernel<scalar_t><<<blocksPout, threadsP>>>(
+            x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            pOut.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            alpha
+            );
+    
+    }));
+    return pOut;
+}
+
+// -----------------------------------------------------------------------------
+// Standard cuda kernel
+torch::Tensor entmax_cuda_forward_lowdim(
+    torch::Tensor x,
+    float alpha,
+    int nIters,
+    int nSections
+){
+    auto options = torch::TensorOptions().device(torch::device_of(x)).dtype(x.dtype());
+    auto shape = torch::_shape_as_tensor(x);
+    auto bsz = shape[0].item<int>(); 
+    auto d = shape[1].item<int>();
+    auto df = shape[1].item<float>();
+
+    auto max = torch::amax(x, -1, true);
+    auto tauLo = max * (alpha - 1.0) - 1.0;
+    x = x * (alpha - 1.0);
+
+    df = pow(df, alpha - 1.0);
+    auto tauWidth = (df - 1.0)/df;
+    
+
+    int threadsP = 32; // 64 items
+    if (d > 1024){
+        threadsP = 1024; // 2048 items
+    }
+    else if (d > 512){
+        threadsP = 512; // 1024 items
+    }
+    else if (d > 256){
+        threadsP = 256; // 512 items
+    }
+    else if (d > 128){
+        threadsP = 128; // 256 items
+    }
+    else if (d > 64){
+        threadsP = 64; // 128
+    }
+    const int threadsTau = nSections;
+    const int blocksdim = (d + threadsP - 1) / threadsP;
+
+    // each thread does double work while loading, so divide threads by two
+    const dim3  blocksP((blocksdim + 1) / 2, nSections, bsz);
+    const dim3  blocksTau(bsz, 1, 1);
+    const dim3  blocksPout(blocksdim, bsz, 1);
+
+    auto pSum = torch::zeros({bsz, nSections}, options);
+
+    for(int i = 0; i < nIters; i++){
+        tauWidth /= (nSections);
+
+        // kernel for sum over treads in bloock
+        switch (threadsP)
+        {
+        case 1024:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 512:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 256:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 128:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 64:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 32:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        }
 
         // kernel for updating tauLo
         AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
