@@ -89,7 +89,8 @@ __global__ void p_reduction_kernel(
     }
 }
 
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
 template <typename scalar_t, unsigned int blockSize>
 __global__ void p_reduction_kernel_lowdim(
     const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> x,
@@ -120,7 +121,11 @@ __global__ void p_reduction_kernel_lowdim(
         row_vec[threadIdx.x] = 0.0;
     }
     __syncthreads();
-   
+    
+    if (blockSize >= 1024) {
+        if (threadIdx.x < 512) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 512];} __syncthreads(); }
+    if (blockSize >= 512) {
+        if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
     if (blockSize >= 256) {
         if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
     if (blockSize >= 128) {
@@ -132,10 +137,12 @@ __global__ void p_reduction_kernel_lowdim(
     
     // let thread 0 for this block write to global memory 
     if (threadIdx.x == 0){
-        blockSum[row][section] = row_vec[0];
+        pSum[row][section] = row_vec[0];
     }
 }
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 template <typename scalar_t>
 __global__ void sum_reduction_kernel(
@@ -363,8 +370,9 @@ torch::Tensor entmax_cuda_forward(
     return pOut;
 }
 
-// -----------------------------------------------------------------------------
-// Standard cuda kernel
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+// Standard cuda kernel for low dim inputs
 torch::Tensor entmax_cuda_forward_lowdim(
     torch::Tensor x,
     float alpha,
