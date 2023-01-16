@@ -4,34 +4,34 @@ from torch.autograd import Function
 
 import nsection_cuda
 
-# class EntmaxNsectFunction1(Function):
-#     @classmethod
-#     def forward(cls, ctx, X, alpha=1.5, n_iter=5, n_sections=5, ensure_sum_one=True):
-#         ctx.alpha = alpha
+class EntmaxNsectFunction1(Function):
+    @classmethod
+    def forward(cls, ctx, X, alpha=1.5, n_iter=5, n_sections=5, ensure_sum_one=True):
+        ctx.alpha = alpha
 
-#         p_m = nsection_cuda.forward1(X, alpha, n_iter, n_sections)
+        p_m = nsection_cuda.forward1(X, alpha, n_iter, n_sections)
 
-#         ctx.save_for_backward(p_m)
+        ctx.save_for_backward(p_m)
 
-#         if ensure_sum_one:
-#             p_m /= p_m.sum(dim=-1).unsqueeze(dim=-1)
+        if ensure_sum_one:
+            p_m /= p_m.sum(dim=-1).unsqueeze(dim=-1)
 
-#         return p_m
+        return p_m
 
-#     @classmethod
-#     def backward(cls, ctx, dY):
-#         (Y,) = ctx.saved_tensors
+    @classmethod
+    def backward(cls, ctx, dY):
+        (Y,) = ctx.saved_tensors
 
-#         if ctx.alpha == 2:
-#             dX = nsection_cuda.sparsemax_backward(Y, dY)
-#         else:
-#             dX = nsection_cuda.entmax_backward(Y, dY, ctx.alpha)
+        if ctx.alpha == 2:
+            dX = nsection_cuda.sparsemax_backward(Y, dY)
+        else:
+            dX = nsection_cuda.entmax_backward(Y, dY, ctx.alpha)
 
-#         return dX, None, None, None, None, None
+        return dX, None, None, None, None, None
 
 
-# def entmax_nsect_cuda1(X, alpha=1.5, n_iter=5, n_sections=5, ensure_sum_one=True):
-#     return EntmaxNsectFunction1.apply(X, alpha, n_iter, n_sections, ensure_sum_one)
+def entmax_nsect_cuda1(X, alpha=1.5, n_iter=5, n_sections=5, ensure_sum_one=True):
+    return EntmaxNsectFunction1.apply(X, alpha, n_iter, n_sections, ensure_sum_one)
 
 class EntmaxNsectFunction(Function):
     @classmethod
