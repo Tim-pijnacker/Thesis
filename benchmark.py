@@ -223,9 +223,7 @@ class benchmarker():
                 axs[idx].set(xlabel='input dimension', ylabel='time (s)')
                 axs[idx].set_xscale('log', base=2)
             axs[idx].set_title(f'{n_rows} input rows ')
-        labels_list = self.models
-        labels_list.remove("cuda")
-        fig.legend(labels=labels_list)
+        fig.legend(labels=self.models)
         # plt.show()
         plt.savefig("plt.png")
 
