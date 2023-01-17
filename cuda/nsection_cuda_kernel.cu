@@ -122,14 +122,14 @@ __global__ void p_reduction_kernel_lowdim(
     }
     __syncthreads();
     
-    if (blockSize >= 1024) {
-        if (threadIdx.x < 512) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 512];} __syncthreads(); }
-    if (blockSize >= 512) {
-        if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
-    if (blockSize >= 256) {
-        if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
-    if (blockSize >= 128) {
-        if (threadIdx.x <  64) {row_vec[threadIdx.x] += row_vec[threadIdx.x +  64];} __syncthreads(); }
+    // if (blockSize >= 1024) {
+    //     if (threadIdx.x < 512) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 512];} __syncthreads(); }
+    // if (blockSize >= 512) {
+    //     if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
+    // if (blockSize >= 256) {
+    //     if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
+    // if (blockSize >= 128) {
+    //     if (threadIdx.x <  64) {row_vec[threadIdx.x] += row_vec[threadIdx.x +  64];} __syncthreads(); }
 
     if (threadIdx.x < 32) {
         warpReduceSum<blockSize>(row_vec, threadIdx.x);
@@ -430,70 +430,79 @@ torch::Tensor entmax_cuda_forward_lowdim(
     for(int i = 0; i < nIters; i++){
         tauWidth /= (nSections);
 
+        AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+            p_reduction_kernel_lowdim<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
+                x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                alpha,
+                tauWidth
+                );
+        }));
         // kernel for sum over treads in bloock
-        switch (threadsP)
-        {
-        case 1024:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 512:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 256:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 128:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 64:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        case 32:
-            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel_lowdim<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
-                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                    alpha,
-                    tauWidth
-                    );
-            })); break;
-        }
+        // switch (threadsP)
+        // {
+        // case 1024:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // case 512:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // case 256:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // case 128:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // case 64:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // case 32:
+        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        //         p_reduction_kernel_lowdim<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
+        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+        //             alpha,
+        //             tauWidth
+        //             );
+        //     })); break;
+        // }
 
         // kernel for updating tauLo
         AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
