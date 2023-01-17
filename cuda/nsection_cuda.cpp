@@ -10,7 +10,7 @@ torch::Tensor entmax_cuda_forward(
 );
 
 torch::Tensor entmax_cuda_forward_lowdim(
-    torch::Tensor x,
+    torch::Tensor Z,
     float alpha,
     int nIters,
     int nSections
