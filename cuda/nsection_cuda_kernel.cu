@@ -395,26 +395,28 @@ torch::Tensor entmax_cuda_forward_lowdim(
     df = pow(df, alpha - 1.0);
     auto tauWidth = (df - 1.0)/df;
     
+    int threadsP = 32; // 64 items
 
-    int threadsP = 16; // 32 items
-    if (d > 1024){
-        threadsP = 1024; // 2048 items
-    }
-    else if (d > 512){
-        threadsP = 512; // 1024 items
-    }
-    else if (d > 256){
-        threadsP = 256; // 512 items
-    }
-    else if (d > 128){
-        threadsP = 128; // 256 items
-    }
-    else if (d > 64){
-        threadsP = 64; // 128 items
-    }
-    else if (d > 32){
-        threadsP = 32; // 64 items
-    }
+
+    // int threadsP = 16; // 32 items
+    // if (d > 1024){
+    //     threadsP = 1024; // 2048 items
+    // }
+    // else if (d > 512){
+    //     threadsP = 512; // 1024 items
+    // }
+    // else if (d > 256){
+    //     threadsP = 256; // 512 items
+    // }
+    // else if (d > 128){
+    //     threadsP = 128; // 256 items
+    // }
+    // else if (d > 64){
+    //     threadsP = 64; // 128 items
+    // }
+    // else if (d > 32){
+    //     threadsP = 32; // 64 items
+    // }
     const int threadsTau = nSections;
     const int blocksdim = (d + threadsP - 1) / threadsP;
 
