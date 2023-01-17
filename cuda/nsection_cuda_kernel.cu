@@ -265,7 +265,7 @@ torch::Tensor entmax_cuda_forward(
     auto tauWidth = (df - 1.0)/df;
     
 
-    int threadsP = 512;
+    int threadsP = 1024;
     int threadsSum = 64;
 
     // int threadsP = 64;
