@@ -416,7 +416,7 @@ torch::Tensor entmax_cuda_forward_lowdim(
     auto tauWidth = (df - 1.0)/df;
     
     int threadsP = 16; // 32 items
-    else if (d > 512){
+    if (d > 512){
         threadsP = 512; // 1024 items
     }
     else if (d > 256){
