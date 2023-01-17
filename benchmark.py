@@ -231,13 +231,13 @@ class benchmarker():
 
 
 def main():
-    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000], models=["py", "cpp", "cuda1", "bisct", "soft"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [100, 400], cols = [32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
-    bench.initialise_bench(threads=[1])
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000], models=["py", "cpp", "cuda1", "bisct", "soft"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [100, 400], cols = [32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
     bench.initialise_plot()
-    bench.compare()
     bench.plot()
 
 if __name__ == "__main__":
