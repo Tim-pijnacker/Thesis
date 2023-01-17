@@ -74,10 +74,10 @@ __global__ void p_reduction_kernel(
     }
     __syncthreads();
    
-    // if (blockSize >= 256) {
-    //     if (threadIdx.x < 128) {block_vec[threadIdx.x] += block_vec[threadIdx.x + 128];} __syncthreads(); }
-    // if (blockSize >= 128) {
-    //     if (threadIdx.x <  64) {block_vec[threadIdx.x] += block_vec[threadIdx.x +  64];} __syncthreads(); }
+    if (blockSize >= 256) {
+        if (threadIdx.x < 128) {block_vec[threadIdx.x] += block_vec[threadIdx.x + 128];} __syncthreads(); }
+    if (blockSize >= 128) {
+        if (threadIdx.x <  64) {block_vec[threadIdx.x] += block_vec[threadIdx.x +  64];} __syncthreads(); }
 
     if (threadIdx.x < 32) {
         warpReduceSum<blockSize>(block_vec, threadIdx.x);
@@ -121,9 +121,7 @@ __global__ void p_reduction_kernel_lowdim(
         row_vec[threadIdx.x] = 0.0;
     }
     __syncthreads();
-    
-    // if (blockSize >= 1024) {
-    //     if (threadIdx.x < 512) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 512];} __syncthreads(); }
+
     if (blockSize >= 512) {
         if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
     if (blockSize >= 256) {
@@ -264,34 +262,30 @@ torch::Tensor entmax_cuda_forward(
     df = pow(df, alpha - 1.0);
     auto tauWidth = (df - 1.0)/df;
     
+    int threadsP = 32;
+    int threadsSum = 32;
+    if (d > 65536){
+        threadsP = 256;
+        threadsSum = 128;
+    }
+    else if (d > 32768){
+        threadsP = 128;
+        threadsSum = 128;
+    }
+    else if (d > 16384){
+        threadsP = 128;
+        threadsSum = 64; 
+    }
+    else if (d > 8192){
+        threadsP = 64;
+        threadsSum = 64; 
+    }
+    else if (d > 4096){
+        threadsP = 64;
+        threadsSum = 32;
+    }
 
-    int threadsP = 64;
-    int threadsSum = 64;
-
-    // int threadsP = 64;
-    // int threadsSum = 32; // 64
-    // if (d > 65536){
-    //     threadsP = 256;
-    //     threadsSum = 256; // 512
-    // }
-    // else if (d > 32768){
-    //     threadsP = 256;
-    //     threadsSum = 128; // 256
-    // }
-    // else if (d > 16384){
-    //     threadsP = 256;
-    //     threadsSum = 64; // 128
-    // }
-    // else if (d > 8192){
-    //     threadsP = 128;
-    //     threadsSum = 64; // 128
-    // }
-    // else if (d > 4096){
-    //     threadsP = 128;
-    //     threadsSum = 32; // 64
-    // }
     const int threadsTau = nSections;
-
     const int blocksdim = (d + threadsP - 1) / threadsP;
 
     // each thread does double work while loading, so divide threads by two
@@ -306,21 +300,9 @@ torch::Tensor entmax_cuda_forward(
     for(int i = 0; i < nIters; i++){
         tauWidth /= (nSections);
 
-
-        AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-            p_reduction_kernel<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
-                x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-                alpha,
-                tauWidth
-                );
-        }));
-
-
         // kernel for sum over treads in bloock
-        // switch (threadsP)
-        // {
+        switch (threadsP)
+        {
         // case 1024:
         //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
         //         p_reduction_kernel<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
@@ -341,37 +323,47 @@ torch::Tensor entmax_cuda_forward(
         //             tauWidth
         //             );
         //     })); break;
-        // case 256:
-        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //         p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
-        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //             alpha,
-        //             tauWidth
-        //             );
-        //     })); break;
-        // case 128:
-        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //         p_reduction_kernel<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
-        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //             alpha,
-        //             tauWidth
-        //             );
-        //     })); break;
-        // case 64:
-        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //         p_reduction_kernel<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
-        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //             alpha,
-        //             tauWidth
-        //             );
-        //     })); break;
-        // }
+        case 256:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 128:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 64:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 32:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        }
 
         // kernel for sum over blocks in grid
         AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
