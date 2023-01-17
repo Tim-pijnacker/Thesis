@@ -124,12 +124,12 @@ __global__ void p_reduction_kernel_lowdim(
     
     // if (blockSize >= 1024) {
     //     if (threadIdx.x < 512) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 512];} __syncthreads(); }
-    // if (blockSize >= 512) {
-    //     if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
-    // if (blockSize >= 256) {
-    //     if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
-    // if (blockSize >= 128) {
-    //     if (threadIdx.x <  64) {row_vec[threadIdx.x] += row_vec[threadIdx.x +  64];} __syncthreads(); }
+    if (blockSize >= 512) {
+        if (threadIdx.x < 256) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 256];} __syncthreads(); }
+    if (blockSize >= 256) {
+        if (threadIdx.x < 128) {row_vec[threadIdx.x] += row_vec[threadIdx.x + 128];} __syncthreads(); }
+    if (blockSize >= 128) {
+        if (threadIdx.x <  64) {row_vec[threadIdx.x] += row_vec[threadIdx.x +  64];} __syncthreads(); }
 
     if (threadIdx.x < 32) {
         warpReduceSum<blockSize>(row_vec, threadIdx.x);
