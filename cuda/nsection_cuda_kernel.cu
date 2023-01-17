@@ -266,7 +266,7 @@ torch::Tensor entmax_cuda_forward(
     
 
     int threadsP = 512;
-    int threadsSum = 32;
+    int threadsSum = 16;
 
     // int threadsP = 64;
     // int threadsSum = 32; // 64
