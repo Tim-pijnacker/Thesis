@@ -148,9 +148,6 @@ class benchmarker():
         prod = product(self.rows, self.cols)
         prod = list(prod)
         prod.append((32000, 64))
-        prod.append((100, 32000))
-        prod.append((400, 32000))
-        prod.append((1000, 32000))
         for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
@@ -230,6 +227,9 @@ class benchmarker():
 
 def main():
     bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [100, 400, 4000], cols = [32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
     # bench.initialise_plot()
     bench.compare()
