@@ -222,7 +222,8 @@ class benchmarker():
                 axs[idx].set_xscale('log', base=2)
             axs[idx].set_title(f'{n_rows} input rows ')
         fig.legend(labels=self.models)
-        plt.show()
+        # plt.show()
+        plt.savefig("plt.png")
 
 
 def main():
@@ -231,9 +232,9 @@ def main():
     bench.compare()
     bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [100, 400], cols = [32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
-    # bench.initialise_plot()
+    bench.initialise_plot()
     bench.compare()
-    # bench.plot()
+    bench.plot()
 
 if __name__ == "__main__":
     main()
