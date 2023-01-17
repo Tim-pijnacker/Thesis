@@ -224,7 +224,7 @@ class benchmarker():
                 axs[idx].set_xscale('log', base=2)
             axs[idx].set_title(f'{n_rows} input rows ')
         labels_list = self.models
-        del labels_list["cuda"]
+        labels_list.remove("cuda")
         fig.legend(labels=labels_list)
         # plt.show()
         plt.savefig("plt.png")
