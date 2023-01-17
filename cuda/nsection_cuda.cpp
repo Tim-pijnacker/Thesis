@@ -42,7 +42,7 @@ torch::Tensor nsection_forward1(
     auto shape = torch::_shape_as_tensor(Z);
     auto d = shape[1].item<int>();
 
-    if (d == 64) {
+    if (d <= 1024) {
         return entmax_cuda_forward_lowdim(Z, alpha, nIters, nSections);
     }
     return entmax_cuda_forward(Z, alpha, nIters, nSections);
