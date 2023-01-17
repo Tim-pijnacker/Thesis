@@ -309,6 +309,26 @@ torch::Tensor entmax_cuda_forward(
         // kernel for sum over treads in bloock
         switch (threadsP)
         {
+        case 1024:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
+        case 512:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
         case 256:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
                 p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
@@ -433,6 +453,16 @@ torch::Tensor entmax_cuda_forward_lowdim(
         // kernel for sum over treads in bloock
         switch (threadsP)
         {
+        case 512:
+            AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+                p_reduction_kernel_lowdim<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
+                    x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    pSum.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                    alpha,
+                    tauWidth
+                    );
+            })); break;
         case 256:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
                 p_reduction_kernel_lowdim<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
