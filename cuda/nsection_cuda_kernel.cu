@@ -62,11 +62,11 @@ __global__ void p_reduction_kernel(
     if (i < x.size(1)) {
         if (i < max) {
             const auto sctnTau = tauLo[row][0] + section*tauWidth;
-            block_vec[threadIdx.x*4] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
+            block_vec[threadIdx.x] = prob_add(x[row][i], x[row][i+blockDim.x], sctnTau, alpha);
         }
         if (i >= max) {
             const auto sctnTau = tauLo[row][0] + section*tauWidth;
-            block_vec[threadIdx.x*4] = prob(x[row][i], sctnTau, alpha);
+            block_vec[threadIdx.x] = prob(x[row][i], sctnTau, alpha);
         }
     }
     if (i >= x.size(1)){
@@ -75,12 +75,12 @@ __global__ void p_reduction_kernel(
     __syncthreads();
    
     if (blockSize >= 256) {
-        if (threadIdx.x < 128) {block_vec[threadIdx.x*4] += block_vec[(threadIdx.x + 128)*4];} __syncthreads(); }
+        if (threadIdx.x < 128) {block_vec[threadIdx.x] += block_vec[threadIdx.x + 128];} __syncthreads(); }
     if (blockSize >= 128) {
-        if (threadIdx.x <  64) {block_vec[threadIdx.x*4] += block_vec[(threadIdx.x +  64)*4];} __syncthreads(); }
+        if (threadIdx.x <  64) {block_vec[threadIdx.x] += block_vec[threadIdx.x +  64];} __syncthreads(); }
 
     if (threadIdx.x < 32) {
-        warpReduceSum<blockSize>(block_vec, threadIdx.x*4);
+        warpReduceSum<blockSize>(block_vec, threadIdx.x);
     }
     
     // let thread 0 for this block write to global memory 
