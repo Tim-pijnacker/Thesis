@@ -287,14 +287,15 @@ torch::Tensor entmax_cuda_forward(
 
     const int threadsTau = nSections;
     const int blocksdim = (d + threadsP - 1) / threadsP;
+    const int blocksdimHalf = (blocksdim + 1) / 2;
 
     // each thread does double work while loading, so divide threads by two
-    const dim3  blocksP((blocksdim + 1) / 2, nSections, bsz);
+    const dim3  blocksP(blocksdimHalf, nSections, bsz);
     const dim3  blocksSum(1, nSections, bsz);
     const dim3  blocksTau(bsz, 1, 1);
     const dim3  blocksPout(blocksdim, bsz, 1);
 
-    auto blockSum = torch::zeros({bsz, nSections, blocksdim}, options);
+    auto blockSum = torch::zeros({bsz, nSections, blocksdimHalf}, options);
     auto pSum = torch::zeros({bsz, nSections}, options);
 
     for(int i = 0; i < nIters; i++){
