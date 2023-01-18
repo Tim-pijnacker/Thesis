@@ -325,7 +325,7 @@ torch::Tensor entmax_cuda_forward(
         //     })); break;
         case 256:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP>>>(
+                p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
                     x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
@@ -335,7 +335,7 @@ torch::Tensor entmax_cuda_forward(
             })); break;
         case 128:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 128><<<blocksP, threadsP, threadsP>>>(
+                p_reduction_kernel<scalar_t, 128><<<blocksP, threadsP, threadsP*4>>>(
                     x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
@@ -345,7 +345,7 @@ torch::Tensor entmax_cuda_forward(
             })); break;
         case 64:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 64><<<blocksP, threadsP, threadsP>>>(
+                p_reduction_kernel<scalar_t, 64><<<blocksP, threadsP, threadsP*4>>>(
                     x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
@@ -355,7 +355,7 @@ torch::Tensor entmax_cuda_forward(
             })); break;
         case 32:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-                p_reduction_kernel<scalar_t, 32><<<blocksP, threadsP, threadsP>>>(
+                p_reduction_kernel<scalar_t, 32><<<blocksP, threadsP, threadsP*4>>>(
                     x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                     blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
