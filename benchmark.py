@@ -149,7 +149,7 @@ class benchmarker():
         prod = list(prod)
         prod.append((32000, 64))
         for r, c in prod:
-            x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float64)
+            x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
             for thread in threads:
                 for model in self.models:
@@ -168,7 +168,7 @@ class benchmarker():
             row_dict = defaultdict(list)
             for c in self.x_vals:
                 torch.manual_seed(40)
-                x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float64)
+                x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
                 sub_label = f'[{r}, {c}]'
                 for model in self.models:
                     t = self._time_model(x, model, sub_label, 1)
@@ -183,7 +183,7 @@ class benchmarker():
         
         for r, c in product(self.rows, self.cols):
             torch.manual_seed(40)
-            x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float64)
+            x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
             for thread in threads:
                 self._bench_list.append(self._time_model(x, new_model, sub_label, thread))
