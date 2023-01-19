@@ -229,10 +229,23 @@ class benchmarker():
 
 
 def main():
-    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    print("\n b = 20, n = 5, s = 16 (4)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 20, n_sections = 16, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
     bench.compare()
-    bench = benchmarker(alpha = 1.5, nsct_iter = 5, bisct_iter = 25, n_sections = 32, rows = [100, 400], cols = [32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+
+    print("\n b = 20, n = 4, s = 32 (5)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 4, bisct_iter = 20, n_sections = 32, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\n b = 18, n = 3, s = 64 (6)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 3, bisct_iter = 18, n_sections = 64, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\n b = 21, n = 3, s = 128 (7)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 3, bisct_iter = 21, n_sections = 128, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
     bench.compare()
     # bench.initialise_plot()
