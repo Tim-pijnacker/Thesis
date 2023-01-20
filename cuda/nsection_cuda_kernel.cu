@@ -89,8 +89,6 @@ __global__ void p_reduction_kernel(
     }
 }
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------------------------
 template <typename scalar_t, unsigned int blockSize>
 __global__ void p_reduction_kernel_lowdim(
     const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> x,
@@ -138,8 +136,6 @@ __global__ void p_reduction_kernel_lowdim(
         pSum[row][section] = row_vec[0];
     }
 }
-//---------------------------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 template <typename scalar_t>
@@ -242,6 +238,7 @@ __global__ void p_out_kernel(
 
 } // namespace
 
+//---------------------------------------------------------------------------------------------------------------------------------------------------
 // Standard cuda kernel
 torch::Tensor entmax_cuda_forward(
     torch::Tensor x,
@@ -304,26 +301,6 @@ torch::Tensor entmax_cuda_forward(
         // kernel for sum over treads in bloock
         switch (threadsP)
         {
-        // case 1024:
-        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //         p_reduction_kernel<scalar_t, 1024><<<blocksP, threadsP, threadsP*4>>>(
-        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //             alpha,
-        //             tauWidth
-        //             );
-        //     })); break;
-        // case 512:
-        //     AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
-        //         p_reduction_kernel<scalar_t, 512><<<blocksP, threadsP, threadsP*4>>>(
-        //             x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-        //             blockSum.packed_accessor<scalar_t,3,torch::RestrictPtrTraits,size_t>(),
-        //             alpha,
-        //             tauWidth
-        //             );
-        //     })); break;
         case 256:
             AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
                 p_reduction_kernel<scalar_t, 256><<<blocksP, threadsP, threadsP*4>>>(
@@ -398,8 +375,6 @@ torch::Tensor entmax_cuda_forward(
     return pOut;
 }
 
-//---------------------------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------------------------
 // Standard cuda kernel for low dim inputs
 torch::Tensor entmax_cuda_forward_lowdim(
     torch::Tensor x,
