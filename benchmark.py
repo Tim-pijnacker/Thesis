@@ -229,6 +229,16 @@ class benchmarker():
 
 
 def main():
+    print("\n b = 18, n = 18, s = 2 (1)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\n b = 18, n = 9, s = 4 (2)")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
     print("\n b = 18, n = 6, s = 8 (3)")
     bench = benchmarker(alpha = 1.5, nsct_iter = 6, bisct_iter = 18, n_sections = 8, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
