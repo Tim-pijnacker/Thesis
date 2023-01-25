@@ -241,7 +241,7 @@ __global__ void p_out_kernel(
 template <typename scalar_t>
 __global__ void alternative_kernel(
     const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> x,
-    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo
+    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo,
     scalar_t alpha,
     scalar_t tauWidth
 ){
