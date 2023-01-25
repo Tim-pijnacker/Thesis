@@ -16,22 +16,18 @@ torch::Tensor entmax_cuda_forward_lowdim(
     int nSections
 );
 
+torch::Tensor entmax_cuda_alternative(
+    torch::Tensor x,
+    float alpha,
+    int nIters,
+    int nSections
+);
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 torch::Tensor nsection_forward(
-    torch::Tensor Z,
-    float alpha,
-    int nIters,
-    int nSections
-){
-    CHECK_INPUT(Z);
-
-    return entmax_cuda_forward(Z, alpha, nIters, nSections);
-}
-
-torch::Tensor nsection_forward1(
     torch::Tensor Z,
     float alpha,
     int nIters,
@@ -46,8 +42,19 @@ torch::Tensor nsection_forward1(
         return entmax_cuda_forward_lowdim(Z, alpha, nIters, nSections);
     }
     return entmax_cuda_forward(Z, alpha, nIters, nSections);
-    
 }
+
+torch::Tensor nsection_forward1(
+    torch::Tensor Z,
+    float alpha,
+    int nIters,
+    int nSections
+){
+    CHECK_INPUT(Z);
+
+    return entmax_cuda_alternative(Z, alpha, nIters, nSections);
+}
+
 
 torch::Tensor sparsemax_backward(
     torch::Tensor Y,
