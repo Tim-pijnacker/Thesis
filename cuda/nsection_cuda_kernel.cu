@@ -247,13 +247,13 @@ __global__ void alternative_kernel(
 ){
     const int section = threadIdx.x;
     const int row = blockIdx.x;
+    const int maxSctn = blockDim.x;
 
     extern __shared__ float sctn_sum[];
     extern __shared__ int firstSection[];
 
-
     for (int i = 0; i < x.size(1); i++){
-        sctn_sum[section] += prob(x[i], tauLo[section][row], alpha);
+        sctn_sum[section] += prob(x[row][i], tauLo[section][0], alpha);
     }
     __syncthreads();
 
@@ -304,8 +304,28 @@ torch::Tensor entmax_cuda_alternative(
     df = pow(df, alpha - 1.0);
     auto tauWidth = (df - 1.0)/df;
 
+    int threadsP = 32;
+    if (d > 65536){
+        threadsP = 256;
+    }
+    else if (d > 32768){
+        threadsP = 128;
+    }
+    else if (d > 16384){
+        threadsP = 128;
+    }
+    else if (d > 8192){
+        threadsP = 64;
+    }
+    else if (d > 4096){
+        threadsP = 64;
+    }
+
     int threads = nSections;
     const dim3 blocks(bsz, 1, 1);
+
+    const int blocksdim = (d + threadsP - 1) / threadsP;
+    const dim3 blocksPout(blocksdim, bsz, 1);
 
     for(int i = 0; i < nIters; i++){
         tauWidth /= (nSections);
@@ -313,10 +333,10 @@ torch::Tensor entmax_cuda_alternative(
         AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_alternative", ([&] {
             alternative_kernel<scalar_t><<<blocks, threads, threads*4>>>(
                 x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
-                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>()
+                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
                 alpha,
                 tauWidth
-            );
+                );
         }));
     }
 
@@ -328,7 +348,7 @@ torch::Tensor entmax_cuda_alternative(
             tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
             pOut.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
             alpha
-        );
+            );
     }));
     return pOut;
 }
