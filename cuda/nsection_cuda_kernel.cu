@@ -215,7 +215,7 @@ __global__ void tauLo_kernel(
         __syncthreads();
     }
     
-    // thread 0 contains the final sum
+    // thread 0 contains the first section with sum < 1 
     if (section == 0){
         tauLo[row][0] = tauLo[row][0] + (firstSection[0] - 1) * tauWidth;
     }
@@ -235,10 +235,107 @@ __global__ void p_out_kernel(
         pOut[row][col] = prob(x[row][col], tauLo[row][0], alpha);
     }
 }
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+
+template <typename scalar_t>
+__global__ void alternative_kernel(
+    const torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> x,
+    torch::PackedTensorAccessor<scalar_t,2,torch::RestrictPtrTraits,size_t> tauLo
+    scalar_t alpha,
+    scalar_t tauWidth
+){
+    const int section = threadIdx.x;
+    const int row = blockIdx.x;
+
+    extern __shared__ float sctn_sum[];
+    extern __shared__ int firstSection[];
+
+
+    for (int i = 0; i < x.size(1); i++){
+        sctn_sum[section] += prob(x[i], tauLo[section][row], alpha);
+    }
+    __syncthreads();
+
+    if (sctn_sum[section] < 1.0){
+        firstSection[section] = section;
+    }
+    if (sctn_sum[section] >= 1.0){
+        firstSection[section] = maxSctn;
+    }
+    __syncthreads();
+
+    // iterate of log base 2 the block dimension
+    for (int s = blockDim.x / 2; s > 0; s >>= 1){
+        // only part of the threads are active
+        if (threadIdx.x < s){
+            if (firstSection[threadIdx.x] > firstSection[threadIdx.x + s]){
+                firstSection[threadIdx.x] = firstSection[threadIdx.x + s];
+            }
+        }
+        __syncthreads();
+    }
+
+    // thread 0 contains the first section with sum < 1 
+    if (section == 0){
+        tauLo[row][0] = tauLo[row][0] + (firstSection[0] - 1) * tauWidth;
+    }
+}
 
 } // namespace
 
+
+torch::Tensor entmax_cuda_alternative(
+    torch::Tensor x,
+    float alpha,
+    int nIters,
+    int nSections
+){
+    auto options = torch::TensorOptions().device(torch::device_of(x)).dtype(x.dtype());
+    auto shape = torch::_shape_as_tensor(x);
+    auto bsz = shape[0].item<int>(); 
+    auto d = shape[1].item<int>();
+    auto df = shape[1].item<float>();
+
+    auto max = torch::amax(x, -1, true);
+    auto tauLo = max * (alpha - 1.0) - 1.0;
+    x = x * (alpha - 1.0);
+
+    df = pow(df, alpha - 1.0);
+    auto tauWidth = (df - 1.0)/df;
+
+    int threads = nSections;
+    const dim3 blocks(bsz, 1, 1);
+
+    for(int i = 0; i < nIters; i++){
+        tauWidth /= (nSections);
+
+        AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_alternative", ([&] {
+            alternative_kernel<scalar_t><<<blocks, threads, threads*4>>>(
+                x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+                tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>()
+                alpha,
+                tauWidth
+            );
+        }));
+    }
+
+    auto pOut = torch::zeros_like(x);
+    // kernel for sum over threads in blocks
+    AT_DISPATCH_FLOATING_TYPES(x.type(), "nsection_forward_cuda", ([&] {
+        p_out_kernel<scalar_t><<<blocksPout, threadsP>>>(
+            x.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            tauLo.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            pOut.packed_accessor<scalar_t,2,torch::RestrictPtrTraits,size_t>(),
+            alpha
+        );
+    }));
+    return pOut;
+}
+
 //---------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+
 // Standard cuda kernel
 torch::Tensor entmax_cuda_forward(
     torch::Tensor x,
