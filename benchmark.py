@@ -217,8 +217,6 @@ class benchmarker():
         fig.suptitle("Time plots for differnet input sizes")
         for idx, n_rows in enumerate(self._plot_dict.keys()):
             for model in self.models:
-                if model == "cuda":
-                    continue
                 axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
                 axs[idx].set(xlabel='input dimension', ylabel='time (s)')
                 axs[idx].set_xscale('log', base=2)
