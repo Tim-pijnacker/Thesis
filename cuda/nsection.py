@@ -53,8 +53,10 @@ class EntmaxNsectFunction(Function):
 
 def entmax_nsect_cuda(X, alpha=1.5, n_iter=5, n_sections=5):
     if alpha == 2.0:
+        print("sparsemax")
         SparsemaxNsectFunction.apply(X, n_iter, n_sections)
     
+    print("entmax")
     return EntmaxNsectFunction.apply(X, alpha, n_iter, n_sections)
 
 
