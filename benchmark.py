@@ -228,15 +228,18 @@ class benchmarker():
 
 
 def main():
-    print("\n b = 18, n = 9, s = 4 (2)")
+    print("1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
     bench.initialise_bench(threads=[1])
     bench.compare()
-    bench.initialise_plot()
-    bench.plot()
+    # bench.initialise_plot()
+    # bench.plot()
+    print("\nSparsemax")
     bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
-    bench.initialise_plot()
-    bench.plot(name="plt2.png")
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+    # bench.initialise_plot()
+    # bench.plot(name="plt2.png")
     
     
 if __name__ == "__main__":
