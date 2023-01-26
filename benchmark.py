@@ -230,12 +230,12 @@ class benchmarker():
 
 def main():
     print("\n b = 18, n = 9, s = 4 (2)")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
     bench.initialise_bench(threads=[1])
     bench.compare()
     bench.initialise_plot()
     bench.plot()
-    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
     bench.initialise_plot()
     bench.plot(name="plt2.png")
     
