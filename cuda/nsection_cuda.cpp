@@ -16,9 +16,14 @@ torch::Tensor entmax_cuda_forward_lowdim(
     int nSections
 );
 
-torch::Tensor entmax_cuda_alternative(
-    torch::Tensor x,
-    float alpha,
+torch::Tensor sparsemax_cuda_forward(
+    torch::Tensor Z,
+    int nIters,
+    int nSections
+);
+
+torch::Tensor sparsemax_cuda_forward_lowdim(
+    torch::Tensor Z,
     int nIters,
     int nSections
 );
@@ -44,15 +49,20 @@ torch::Tensor nsection_forward(
     return entmax_cuda_forward(Z, alpha, nIters, nSections);
 }
 
-torch::Tensor nsection_forward1(
+torch::Tensor sparsemax_nsection_forward(
     torch::Tensor Z,
-    float alpha,
     int nIters,
     int nSections
 ){
     CHECK_INPUT(Z);
 
-    return entmax_cuda_alternative(Z, alpha, nIters, nSections);
+    auto shape = torch::_shape_as_tensor(Z);
+    auto d = shape[1].item<int>();
+
+    if (d <= 1024) {
+        return sparsemax_cuda_forward_lowdim(Z, nIters, nSections);
+    }
+    return sparsemax_cuda_forward(Z, nIters, nSections);
 }
 
 
@@ -84,7 +94,7 @@ torch::Tensor entmax_backward(
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m){
     m.def("forward", &nsection_forward, "nsection forward");
-    m.def("forward1", &nsection_forward1, "nsection forward1");
+    m.def("sparsemax_forward", &sparsemax_nsection_forward, "nsection forward1");
     m.def("sparsemax_backward", &sparsemax_backward, "Sparsemax backward");
     m.def("entmax_backward", &entmax_backward, "Entmax backward");
 }
