@@ -781,7 +781,7 @@ torch::Tensor sparsemax_cuda_forward_lowdim(
 
     auto tauWidth = (df - 1.0)/df;
     
-    int threadsP = 16; // 32 items
+    int threadsP = 32; // 64 items
     if (d > 512){
         threadsP = 512; // 1024 items
     }
@@ -793,9 +793,6 @@ torch::Tensor sparsemax_cuda_forward_lowdim(
     }
     else if (d > 64){
         threadsP = 64; // 128 items
-    }
-    else if (d > 32){
-        threadsP = 32; // 64 items
     }
     const int threadsTau = nSections;
     const int blocksdim = (d + threadsP - 1) / threadsP;
