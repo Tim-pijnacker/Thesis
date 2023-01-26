@@ -220,6 +220,7 @@ class benchmarker():
                 axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
                 axs[idx].set(xlabel='input dimension', ylabel='time (s)')
                 axs[idx].set_xscale('log', base=2)
+                axs[idx].set_xticks(self.x_vals)
             axs[idx].set_title(f'{n_rows} input rows ')
         fig.legend(labels=["py", "cpp", "cuda", "bisct", "soft"])
         # plt.show()
