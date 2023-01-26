@@ -31,45 +31,16 @@ def test_nsection_out(alpha, dtype, device, dim):
     if device == torch.device("cuda:0"):
         assert torch.allclose(y_hat_cuda, y_true)
 
-import torch.utils.benchmark as benchmark
 
+# torch.manual_seed(40)
+# x = torch.randn(10, 5, dtype=torch.float32, device=torch.device("cuda:0"))
 
-torch.manual_seed(40)
-x = torch.randn(100, 30000, dtype=torch.float32, device=torch.device("cuda:0"))
+# out1 = entmax_nsect_cuda(x, 1.5, 18, 4)
+# outtrue = entmax_bisect(x, 1.5)
+# print("\n Cuda1:")
+# print(out1)
 
+# print("\n entmax: ")
+# print(outtrue)
 
-out1 = entmax_nsect_cuda(x, 1.75, 50, 2)
-out2 = entmax_nsect(x, 1.75, 50, 2)
-out3 = entmax_nsect_cpp(x, 1.75, 50, 2)
-outtrue = entmax_bisect(x, 1.75)
-print("\n Cuda1:")
-print(out1)
-
-print("\n Py: ")
-print(out2)
-
-print(torch.sum(torch.abs(out1 - outtrue)))
-print(torch.sum(torch.abs(out3 - outtrue)))
-# timer = benchmark.Timer(
-#     stmt='entmax_nsect_cuda(x, alpha = 1.5, n_iter=5, n_sections=32)',
-#     setup='from cuda.nsection import entmax_nsect_cuda',
-#     globals={'x': x},
-#     num_threads=1,
-#     label="cuda comparison",
-#     sub_label="[10, 1000]",
-#     description="cuda",
-# ).timeit(100)
-
-# timer1 = benchmark.Timer(
-#     stmt='entmax_nsect_cuda1(x, alpha = 1.5, n_iter=5, n_sections=32)',
-#     setup='from cuda.nsection import entmax_nsect_cuda1',
-#     globals={'x': x},
-#     num_threads=1,
-#     label="cuda comparison",
-#     sub_label="[10, 1000]",
-#     description="cuda1",
-# ).timeit(100)
-
-# compare = benchmark.Compare([timer, timer1])
-# compare.colorize()
-# compare.print()
+# print(torch.sum(torch.abs(out1 - outtrue)))
