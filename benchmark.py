@@ -207,7 +207,7 @@ class benchmarker():
         compare.colorize()
         compare.print()
 
-    def plot(self):
+    def plot(self, name="plt.png"):
         if "x" in self._plot_dict.keys():
             self.x_vals = self._plot_dict["x"]
             del self._plot_dict["x"]
@@ -225,7 +225,7 @@ class benchmarker():
             axs[idx].set_title(f'{n_rows} input rows ')
         fig.legend(labels=["py", "cpp", "cuda", "bisct", "soft"])
         # plt.show()
-        plt.savefig("plt.png")
+        plt.savefig(name)
 
 
 def main():
@@ -233,8 +233,12 @@ def main():
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
     bench.compare()
-    # bench.initialise_plot()
-    # bench.plot()
-
+    bench.initialise_plot()
+    bench.plot()
+    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000], models=["py", "cpp", "cuda", "cuda1", "bisct", "soft"])
+    bench.initialise_plot()
+    bench.plot(name="plt2.png")
+    
+    
 if __name__ == "__main__":
     main()
