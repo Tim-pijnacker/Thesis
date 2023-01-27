@@ -148,6 +148,9 @@ class benchmarker():
         prod = product(self.rows, self.cols)
         prod = list(prod)
         prod.append((32000, 64))
+        prod.append((2000, 6632))
+        prod.append((4096, 6632))
+        prod.append((8000, 6632))
         for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
