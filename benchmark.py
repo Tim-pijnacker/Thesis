@@ -210,14 +210,14 @@ class benchmarker():
         compare.colorize()
         compare.print()
 
-    def plot(self, name="plt.png"):
+    def plot(self, name="plt.png", plot_title="Time plots for differnet input sizes"):
         if "x" in self._plot_dict.keys():
             self.x_vals = self._plot_dict["x"]
             del self._plot_dict["x"]
 
         n_plots = len(self._plot_dict.keys())
         fig, axs = plt.subplots(1, n_plots, figsize=(10, 6))
-        fig.suptitle("Time plots for differnet input sizes")
+        fig.suptitle(plot_title)
         for idx, n_rows in enumerate(self._plot_dict.keys()):
             for model in self.models:
                 axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
@@ -233,16 +233,16 @@ class benchmarker():
 def main():
     print("1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-    # bench.initialise_plot()
-    # bench.plot()
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+    bench.initialise_plot()
+    bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
     print("\nSparsemax")
     bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-    # bench.initialise_plot()
-    # bench.plot(name="plt2.png")
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+    bench.initialise_plot()
+    bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
     
     
 if __name__ == "__main__":
