@@ -89,7 +89,7 @@ class _BaseEntmaxCriterion(FairseqCriterion):
 class EntmaxNsectCriterion(_BaseEntmaxCriterion):
     def __init__(self, task, loss_alpha, sentence_avg):
         super().__init__(task, loss_alpha, sentence_avg)
-        self.criterion = partial(NsectCudaLoss, alpha=loss_alpha)
+        self.criterion = NsectCudaLoss
 
 
 @register_criterion("entmax_bisect", dataclass=EntmaxLossCriterionConfig)
