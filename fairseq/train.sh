@@ -10,8 +10,8 @@ VALID_ALPHA=1.5
 #export CUDA_VISIBLE_DEVICES=0
 
 fairseq-train \
-    /home/vlad/research/cdgm_textgen/data-bin/iwslt14.tokenized.de-en \
-    --user-dir /home/vlad/research/sparse_output_fairseq/sfseq \
+    /home/timpijnacker/.pyenv/versions/3.10.4/envs/venv3104/lib/python3.10/site-packages/fairseq/data-bin/iwslt14.tokenized.de-en \
+    --user-dir /home/timpijnacker/Thesis/fairseq/sfseq \
     --arch transformer_sparse_out \
     --share-decoder-input-output-embed \
     --encoder-embed-dim 512 \
