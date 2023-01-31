@@ -1,6 +1,11 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Function
+import sys
+ 
+# adding Folder_2 to the system path
+sys.path.insert(0, '/home/timpijnacker/Thesis/cuda')
+
 
 from cuda.nsection import entmax_nsect_cuda
 # from python.nsection import entmax_nsect
