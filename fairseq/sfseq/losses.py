@@ -82,7 +82,7 @@ class NsectCudaLossFunction(_GenericLossFunction):
 
 
 
-def NsectCuda_loss(X, target, k=None):
+def NsectCuda_loss(X, target):
     """1.5-entmax loss: sparse alternative to cross-entropy
     Computed using a partial sorting strategy.
     Parameters
@@ -102,13 +102,12 @@ def NsectCuda_loss(X, target, k=None):
     losses, torch.Tensor, shape=(n_samples,)
         The loss incurred at each sample.
     """
-    return NsectCudaLossFunction.apply(X, target, k)
+    return NsectCudaLossFunction.apply(X, target)
 
 
 class NsectCudaLoss(_GenericLoss):
-    def __init__(self, k=100, ignore_index=-100, reduction="elementwise_mean"):
-        self.k = k
+    def __init__(self, ignore_index=-100, reduction="elementwise_mean"):
         super(NsectCudaLoss, self).__init__(ignore_index, reduction)
 
     def loss(self, X, target):
-        return NsectCuda_loss(X, target, self.k)
+        return NsectCuda_loss(X, target)
