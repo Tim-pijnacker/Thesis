@@ -16,6 +16,7 @@ from entmax import (Entmax15Loss,
                     SparsemaxBisectLoss,
                     EntmaxBisectLoss)
 
+from losses import NsectCudaLoss
 
 @dataclass
 class EntmaxLossCriterionConfig(FairseqDataclass):
@@ -84,6 +85,13 @@ class _BaseEntmaxCriterion(FairseqCriterion):
         return True
 
 
+@register_criterion("entmax_nsect", dataclass=EntmaxLossCriterionConfig)
+class EntmaxBisectCriterion(_BaseEntmaxCriterion):
+    def __init__(self, task, loss_alpha, sentence_avg):
+        super().__init__(task, loss_alpha, sentence_avg)
+        self.criterion = partial(NsectCudaLoss, alpha=loss_alpha)
+
+
 @register_criterion("entmax_bisect", dataclass=EntmaxLossCriterionConfig)
 class EntmaxBisectCriterion(_BaseEntmaxCriterion):
     def __init__(self, task, loss_alpha, sentence_avg):
@@ -110,3 +118,4 @@ class SparsemaxExactCriterion(_BaseEntmaxCriterion):
     def __init__(self, task, loss_alpha, sentence_avg):
         super().__init__(task, loss_alpha, sentence_avg)
         self.criterion = SparsemaxLoss
+
