@@ -82,7 +82,7 @@ class NsectCudaLossFunction(_GenericLossFunction):
 
 
 
-def NsectCuda_loss(X, target):
+def NsectCuda_loss(X, target, alpha):
     """1.5-entmax loss: sparse alternative to cross-entropy
     Computed using a partial sorting strategy.
     Parameters
