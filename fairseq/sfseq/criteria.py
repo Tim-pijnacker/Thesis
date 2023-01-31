@@ -16,7 +16,7 @@ from entmax import (Entmax15Loss,
                     SparsemaxBisectLoss,
                     EntmaxBisectLoss)
 
-from losses import NsectCudaLoss
+from .losses import NsectCudaLoss
 
 @dataclass
 class EntmaxLossCriterionConfig(FairseqDataclass):
