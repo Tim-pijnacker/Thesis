@@ -81,28 +81,30 @@ class NsectCudaLossFunction(_GenericLossFunction):
         return super().forward(ctx, X, target, alpha=1.5, proj_args=dict(k=k))
 
 
+class SparsemaxNsectCudaLossFunction(_GenericLossFunction):
+
+    n_fwd_args = 1
+
+    @classmethod
+    def project(cls, X, alpha, k=None):
+        return entmax_nsect_cuda(X, alpha=2.0, n_iter=9, n_sections=4)
+
+    @classmethod
+    def omega(cls, p_star, alpha):
+        return (1 - (p_star * torch.sqrt(p_star)).sum(dim=1)) / 0.75
+
+    @classmethod
+    def forward(cls, ctx, X, target, k=None):
+        return super().forward(ctx, X, target, alpha=2.0, proj_args=dict(k=k))
+
+
 
 def NsectCuda_loss(X, target):
-    """1.5-entmax loss: sparse alternative to cross-entropy
-    Computed using a partial sorting strategy.
-    Parameters
-    ----------
-    X : torch.Tensor, shape=(n_samples, n_classes)
-        The input 2D tensor of predicted scores
-    target : torch.LongTensor, shape=(n_samples,)
-        The ground truth labels, 0 <= target < n_classes.
-    k : int or None
-        number of largest elements to partial-sort over. For optimal
-        performance, should be slightly bigger than the expected number of
-        nonzeros in the solution. If the solution is more than k-sparse,
-        this function is recursively called with a 2*k schedule.
-        If `None`, full sorting is performed from the beginning.
-    Returns
-    -------
-    losses, torch.Tensor, shape=(n_samples,)
-        The loss incurred at each sample.
-    """
     return NsectCudaLossFunction.apply(X, target)
+
+
+def SparsemaxNsectCuda_loss(X, target):
+    return SparsemaxNsectCudaLossFunction.apply(X, target)
 
 
 class NsectCudaLoss(_GenericLoss):
@@ -111,3 +113,10 @@ class NsectCudaLoss(_GenericLoss):
 
     def loss(self, X, target):
         return NsectCuda_loss(X, target)
+
+class SparsemaxNsectCudaLoss(_GenericLoss):
+    def __init__(self, ignore_index=-100, reduction="elementwise_mean"):
+        super(NsectCudaLoss, self).__init__(ignore_index, reduction)
+
+    def loss(self, X, target):
+        return SparsemaxNsectCuda_loss(X, target)
