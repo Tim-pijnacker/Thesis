@@ -3,7 +3,7 @@ from cuda.nsection import entmax_nsect_cuda
 
 
 def main():
-    x = torch.randn(100, 10000, device=torch.device("cuda:0"), dtype=torch.float32)
+    x = torch.randn(1000, 10000, device=torch.device("cuda:0"), dtype=torch.float32)
     out = entmax_nsect_cuda(x, alpha = 1.5, n_iter=9, n_sections=4)
     return 0
 
