@@ -42,6 +42,6 @@ fairseq-train \
     --eval-bleu-print-samples \
     --best-checkpoint-metric bleu \
     --maximize-best-checkpoint-metric \
-    --wandb-project fast_sparse_seq2seq \
-    --validate-interval-updates 1 \
+    --wandb-project fairseq_thesis \
+    # --validate-interval-updates 1 \
     --save-dir ${CRITERION}
