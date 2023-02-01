@@ -2,8 +2,8 @@
 # CRITERION=sparsemax_bisect
 # CRITERION=cross_entropy
 # CRITERION=entmax15_exact
-CRITERION=entmax_bisect
-# CRITERION=entmax_nsect
+# CRITERION=entmax_bisect
+CRITERION=entmax_nsect
 
 # now you must configure this too.
 # if this causes errors while validating, set it to 1
