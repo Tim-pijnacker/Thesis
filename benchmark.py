@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import torch.utils.benchmark as benchmark
-from itertools import product
+from itertools import product, cycle
 from collections import defaultdict
 
 # functions to benchmark
@@ -148,9 +148,8 @@ class benchmarker():
         prod = product(self.rows, self.cols)
         prod = list(prod)
         prod.append((32000, 64))
-        prod.append((2000, 6632))
-        prod.append((4096, 6632))
-        prod.append((8000, 6632))
+        prod.append((4096, 8850))
+        prod.append((4096, 32000))
         for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
             sub_label = f'[{r}, {c}]'
@@ -218,31 +217,38 @@ class benchmarker():
         n_plots = len(self._plot_dict.keys())
         fig, axs = plt.subplots(1, n_plots, figsize=(10, 6))
         fig.suptitle(plot_title)
+        marker = cycle((',', '+', '.', 'o', '*')) 
         for idx, n_rows in enumerate(self._plot_dict.keys()):
-            for model in self.models:
-                axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model])
+            for model in ["bisct", "py", "cpp", "cuda", "soft"]:
+                axs[idx].plot(self.x_vals, self._plot_dict[n_rows][model], marker=next(marker))
                 axs[idx].set(xlabel='input dimension', ylabel='time (s)')
                 axs[idx].set_xscale('log', base=2)
                 axs[idx].set_xticks(self.x_vals)
             axs[idx].set_title(f'{n_rows} input rows ')
-        fig.legend(labels=["py", "cpp", "cuda", "bisct", "soft"])
+        fig.legend(labels=["bisct", "py", "cpp", "cuda", "soft"])
         # plt.show()
         plt.savefig(name)
 
 
 def main():
     print("1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
-    # bench.initialise_bench(threads=[1])
-    # bench.compare()
+    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
     bench.initialise_plot()
     bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
+
     print("\nSparsemax")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000, 32000])
-    # bench.initialise_bench(threads=[1])
-    # bench.compare()
+    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
     bench.initialise_plot()
     bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
+
+    print("\nN-section n = 2")
+    bench = benchmarker(alpha = 2.0, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [10, 100], cols = [100, 1000, 10000])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
     
     
 if __name__ == "__main__":
