@@ -231,7 +231,12 @@ class benchmarker():
 
 
 def main():
-    print("1.5-Entmax")
+    print("bigger input")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\n1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     bench.initialise_bench(threads=[1])
     bench.compare()
