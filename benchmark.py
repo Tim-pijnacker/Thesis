@@ -231,11 +231,22 @@ class benchmarker():
 
 
 def main():
-    print("bigger input")
+    print("\nbigger input 1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
     bench.initialise_bench(threads=[1])
     bench.compare()
 
+    print("\nbigger input sparsemax")
+    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\nbigger input N-section n = 2")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    bench.initialise_bench(threads=[1])
+    bench.compare()
+
+    print("\n------------------------------------------")
     print("\n1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     bench.initialise_bench(threads=[1])
