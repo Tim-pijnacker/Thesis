@@ -43,6 +43,6 @@ fairseq-train \
     --best-checkpoint-metric bleu \
     --maximize-best-checkpoint-metric \
     --wandb-project fairseq_thesis \
-    --reset-optimizer
+    --reset-optimizer \
     # --validate-interval-updates 1 \
-    # --save-dir ${CRITERION}
+    --save-dir ${CRITERION}
