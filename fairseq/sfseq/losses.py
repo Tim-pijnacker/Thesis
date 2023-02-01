@@ -116,7 +116,7 @@ class NsectCudaLoss(_GenericLoss):
 
 class SparsemaxNsectCudaLoss(_GenericLoss):
     def __init__(self, ignore_index=-100, reduction="elementwise_mean"):
-        super(NsectCudaLoss, self).__init__(ignore_index, reduction)
+        super(SparsemaxNsectCudaLoss, self).__init__(ignore_index, reduction)
 
     def loss(self, X, target):
         return SparsemaxNsectCuda_loss(X, target)
