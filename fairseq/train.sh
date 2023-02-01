@@ -44,4 +44,4 @@ fairseq-train \
     --maximize-best-checkpoint-metric \
     --wandb-project fairseq_thesis \
     # --validate-interval-updates 1 \
-    --save-dir ${CRITERION}
+    # --save-dir ${CRITERION}
