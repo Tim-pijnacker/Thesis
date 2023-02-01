@@ -1,8 +1,8 @@
 # CRITERION=sparsemax_exac
-CRITERION=sparsemax_bisect
+# CRITERION=sparsemax_bisect
 # CRITERION=cross_entropy
 # CRITERION=entmax15_exact
-# CRITERION=entmax_bisect
+CRITERION=entmax_bisect
 # CRITERION=entmax_nsect
 
 # now you must configure this too.
