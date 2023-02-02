@@ -147,8 +147,8 @@ class benchmarker():
 
         prod = product(self.rows, self.cols)
         prod = list(prod)
-        prod.append((32000, 64))
-        prod.append((4096, 8850))
+        # prod.append((32000, 64))
+        # prod.append((4096, 8850))
         # prod.append((4096, 32000))
         for r, c in prod:
             x = torch.randn(r, c, device=torch.device("cuda:0"), dtype=torch.float32)
@@ -246,18 +246,18 @@ def main():
     # bench.initialise_bench(threads=[1])
     # bench.compare()
 
-    print("\n------------------------------------------")
-    print("\n1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    # print("\n------------------------------------------")
+    print("1.5-Entmax")
+    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [100,1000,10000], cols = [32000])
     bench.initialise_bench(threads=[1])
     bench.compare()
     # bench.initialise_plot()
     # bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
 
-    print("\nSparsemax")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
+    # print("\nSparsemax")
+    # bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
     # bench.initialise_plot()
     # bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
     
