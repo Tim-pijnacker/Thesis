@@ -252,13 +252,15 @@ def main():
     bench.initialise_bench(threads=[1])
     bench.compare()
 
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000,14000,15000], cols = [32000], models=["bisct"])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000], cols = [32000], models=["cuda"])
     bench.initialise_bench(threads=[1])
     bench.compare()
 
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000,14000,15000], cols = [32000], models=["cuda"])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000], cols = [32000], models=["bisct"])
     bench.initialise_bench(threads=[1])
     bench.compare()
+
+    
     # bench.initialise_plot()
     # bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
 
