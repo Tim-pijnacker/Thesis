@@ -1,7 +1,7 @@
 # CRITERION=sparsemax_exac
 # CRITERION=sparsemax_bisect
-CRITERION=sparsemax_nsect
-# CRITERION=cross_entropy
+# CRITERION=sparsemax_nsect
+CRITERION=cross_entropy
 # CRITERION=entmax15_exact
 # CRITERION=entmax_bisect
 # CRITERION=entmax_nsect
