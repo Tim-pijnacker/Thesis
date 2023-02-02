@@ -231,40 +231,35 @@ class benchmarker():
 
 
 def main():
-    print("\nbigger input 1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
+    # print("\nbigger input 1.5-Entmax")
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
 
-    print("\nbigger input sparsemax")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
+    # print("\nbigger input sparsemax")
+    # bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
 
-    print("\nbigger input N-section n = 2")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
+    # print("\nbigger input N-section n = 2")
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [4096], cols = [32000], models=["py", "cuda", "bisct", "soft"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
 
     print("\n------------------------------------------")
     print("\n1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     bench.initialise_bench(threads=[1])
     bench.compare()
-    bench.initialise_plot()
-    bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
+    # bench.initialise_plot()
+    # bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
 
     print("\nSparsemax")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     bench.initialise_bench(threads=[1])
     bench.compare()
-    bench.initialise_plot()
-    bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
-
-    print("\nN-section n = 2")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 18, bisct_iter = 18, n_sections = 2, rows = [10, 100], cols = [100, 1000, 10000])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
+    # bench.initialise_plot()
+    # bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
     
     
 if __name__ == "__main__":
