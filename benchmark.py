@@ -248,7 +248,7 @@ def main():
 
     # print("\n------------------------------------------")
     print("1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [100,1000,10000], cols = [32000], models=["cuda", "bisct"])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [100,1000,10000,100000], cols = [32000], models=["cuda", "bisct"])
     bench.initialise_bench(threads=[1])
     bench.compare()
     # bench.initialise_plot()
