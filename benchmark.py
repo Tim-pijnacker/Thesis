@@ -249,27 +249,25 @@ def main():
     # print("\n------------------------------------------")
     print("1.5-Entmax")
     bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [100,1000,10000], cols = [32000], models=["cuda", "bisct"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000,14000], cols = [32000], models=["cuda"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [11000,12000,13000,14000], cols = [32000], models=["bisct"])
-    bench.initialise_bench(threads=[1])
-    bench.compare()
-
-    
-    # bench.initialise_plot()
-    # bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for differnet input sizes")
-
-    # print("\nSparsemax")
-    # bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     # bench.initialise_bench(threads=[1])
     # bench.compare()
-    # bench.initialise_plot()
-    # bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for differnet input sizes")
+    bench.initialise_plot()
+    bench.plot(plot_title = r"Performance for entmax with $\alpha = 1.5$ for different input sizes")
+
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [15000], cols = [32000], models=["cuda"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+
+    # bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [15000], cols = [32000], models=["bisct"])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+
+    print("\nSparsemax")
+    bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    # bench.initialise_bench(threads=[1])
+    # bench.compare()
+    bench.initialise_plot()
+    bench.plot(name="plt2.png", plot_title = r"Performance for sparsemax $(\alpha = 1.5)$ for different input sizes")
     
     
 if __name__ == "__main__":
