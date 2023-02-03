@@ -248,7 +248,7 @@ def main():
 
     # print("\n------------------------------------------")
     print("1.5-Entmax")
-    bench = benchmarker(alpha = 1.5, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [100,1000,10000], cols = [32000], models=["cuda", "bisct"])
+    bench = benchmarker(alpha = 1.5, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [100,1000,10000], cols = [32000], models=["cuda", "bisct"])
     # bench.initialise_bench(threads=[1])
     # bench.compare()
     bench.initialise_plot()
@@ -263,7 +263,7 @@ def main():
     # bench.compare()
 
     print("\nSparsemax")
-    bench = benchmarker(alpha = 2.0, nsct_iter = 12, bisct_iter = 24, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
+    bench = benchmarker(alpha = 2.0, nsct_iter = 9, bisct_iter = 18, n_sections = 4, rows = [10, 100], cols = [100, 1000, 10000])
     # bench.initialise_bench(threads=[1])
     # bench.compare()
     bench.initialise_plot()
